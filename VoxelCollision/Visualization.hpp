@@ -6,11 +6,14 @@
 #include "VisualRenderer.hpp"
 #include "MeshBuilder.hpp"
 #include "VoxelData.hpp"
+#include "Renderer2D.hpp"
 
 class Visualization {
 public:
 	VisualRenderer render;
 	VoxelRenderer voxel_render;
+	Renderer2D renderer2D;
+
 	static void _drawAABB(shared_ptr<Camera> camera,VisualRenderer render,aabb box) {
 		auto model = mat4::trans(box.getMinCorner()) \
 			* mat4::scale(vec3(box.x.size(), box.y.size(), box.z.size())) \
@@ -19,6 +22,8 @@ public:
 	}
 	void drawAABB(shared_ptr<Camera> camera, aabb box) {
 		_drawAABB(camera,render,box);
+	}
+	static void _drawDF(Renderer2D renderer) {
 	}
 
 	static void _drawPoint(shared_ptr<Camera> camera, VisualRenderer render, vec3 point) {

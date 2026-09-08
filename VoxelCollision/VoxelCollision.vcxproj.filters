@@ -37,6 +37,9 @@
     <Filter Include="Header Files\Visualization">
       <UniqueIdentifier>{dee0782f-4655-4abe-a17a-343dde6d7a94}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\DistanceField">
+      <UniqueIdentifier>{32f539b5-bbe8-4914-bf81-6815f2625b46}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -96,6 +99,9 @@
     <ClCompile Include="ModelLoader.hpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="DistanceFieldData.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Player.hpp">
@@ -149,11 +155,14 @@
     <ClInclude Include="VoxelRenderer.hpp">
       <Filter>Header Files\Visualization</Filter>
     </ClInclude>
+    <ClInclude Include="DistanceFieldData.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Renderer2D.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="computeTest.comp">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="defaultShade.frag">
       <Filter>Shaders</Filter>
     </None>
@@ -171,6 +180,9 @@
     </None>
     <None Include="voxel_visualize.vert">
       <Filter>Shaders</Filter>
+    </None>
+    <None Include="df_naive.comp">
+      <Filter>Shaders\DistanceField</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -144,6 +144,7 @@
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="DistanceFieldData.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Helpers.cpp" />
     <ClCompile Include="Helpers.hpp" />
@@ -162,11 +163,13 @@
     <ClInclude Include="BVH.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="DefaultRenderer.hpp" />
+    <ClInclude Include="DistanceFieldData.hpp" />
     <ClInclude Include="interval.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="MeshBuilder.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="ray.hpp" />
+    <ClInclude Include="Renderer2D.hpp" />
     <ClInclude Include="Shader.hpp" />
     <ClInclude Include="ShaderProgram.hpp" />
     <ClInclude Include="Visualization.hpp" />
@@ -176,9 +179,9 @@
     <ClInclude Include="VoxelRenderer.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="computeTest.comp" />
     <None Include="defaultShade.frag" />
     <None Include="defaultShade.vert" />
+    <None Include="df_naive.comp" />
     <None Include="noShade.frag" />
     <None Include="voxelize_transform.vert" />
     <None Include="voxelize_surface.comp" />

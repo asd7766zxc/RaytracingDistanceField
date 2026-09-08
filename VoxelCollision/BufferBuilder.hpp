@@ -121,6 +121,36 @@ public:
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, ptr);
 	}
 };
+//red component float 
+class SingleFloatImageBuffer3D {
+public:
+	GLuint ID = 0;
+	SingleFloatImageBuffer3D() { // for empty handle
+	}
+	int sx = 0, sy = 0, sz = 0;
+	SingleFloatImageBuffer3D(int sx, int sy, int sz) : sx(sx), sy(sy), sz(sz) {
+		glGenTextures(1, &ID);
+		glBindTexture(GL_TEXTURE_3D, ID);
+		glTexStorage3D(GL_TEXTURE_3D, 1, GL_R32F, sx, sy, sz);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	}
+	void BindLocation(GLuint location) {
+		glBindImageTexture(location, ID, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
+	}
+	void BufferData(float* data) {
+		glBindTexture(GL_TEXTURE_3D, ID);
+		glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, sx, sy, sz, GL_RED, GL_FLOAT, data);
+	}
+	void MapBuffer(float* ptr) {
+		glBindTexture(GL_TEXTURE_3D, ID);
+		glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, ptr);
+	}
+};
 class BufferBuilder {
 public:
 	
