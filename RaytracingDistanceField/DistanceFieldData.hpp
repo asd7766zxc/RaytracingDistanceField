@@ -10,6 +10,7 @@ public:
 	SingleFloatImageBuffer3D df_buffer;
 	aabb df_box;
 	float df_size = 0;
+	float longest_axis_length = 0;
 	int sx = 0, sy = 0, sz = 0;
 	DistanceFieldData() {}
 	DistanceFieldData(aabb rough_box, int resolution) {
@@ -23,12 +24,19 @@ public:
 			interval(rough_box.y.min, rough_box.y.min + sy * df_size),
 			interval(rough_box.z.min, rough_box.z.min + sz * df_size)
 		);
-		df_buffer = SingleFloatImageBuffer3D(sx, sy, (sz + 31) / 32);
+		df_buffer = SingleFloatImageBuffer3D(sx, sy, sz);
+		longest_axis_length = std::max({ sx, sy, sz });
 	}
 	int getVoxelCount() {
 		return sx * sy * sz;
 	}
 	vec3 getDistanceFieldSpaceBoundary() {
 		return vec3(sx, sy, sz);
+	}
+	mat4 getModelToDFMatrix() const {
+		return mat4::trans(-df_box.getMinCorner());
+	}
+	mat4 getDFToModelMatrix() const {
+		//return mat4::trans(voxel_box.getMinCorner()) * mat4::scale(voxel_size);
 	}
 };

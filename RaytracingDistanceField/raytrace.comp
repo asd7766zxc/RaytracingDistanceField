@@ -1,0 +1,61 @@
+#version 430 core
+
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+struct ray {
+	vec3 ori;
+	vec3 dir;
+	vec3 at(float t){
+		return t * dir + ori;
+	}
+};
+
+uniform vec3 pixel00Coord;
+uniform vec3 du;
+uniform vec3 dv;
+uniform vec3 eye_coord;
+
+layout (rgba32f, binding = 0) uniform image2D imgOutput;
+vec4 color_out = vec4(0.0, 0.0, 0.0, 1.0);
+
+float hit_sphere(vec3 center,float radius,ray r){
+	vec3 oc = center - r.ori;
+	float a = dot(r.dir,r.dir);
+	float b = -2.0 * dot(r.dir,oc);
+	float c = dot(oc,oc) - radius * radius;
+	float dis = b * b - 4 * a * c;
+	if(dis < 0){
+		return -1.0f;
+	}else{
+		return (-b - sqrt(dis)) / (2.0*a);
+	}
+}
+void trace_ray(ray r){
+	float t = hit_sphere(vec3(0,0,-1),0.5,r);
+	if(t > 0.0){
+		vec3 N = normalize(r.at(t) - vec3(0,0,-1));
+		vec3 color = 0.5 * (N + vec3(1));
+		color_out = vec4(color,1.0f);
+	}else{
+		float a = 0.5 * (r.dir.y + 1.0);
+		vec3 color = (1.0 - a) * vec3(1.0,1.0,1.0) + a * vec3(0.5, 0.7, 1.0);
+		color_out = vec4(color,1.0f);
+	}
+}
+
+void main(){
+	vec3 pixelRawCoord = vec3(gl_GlobalInvocationID.xy, 0);
+	vec3 pixelCoord = pixelRawCoord.x * du + pixelRawCoord.y * dv + pixel00Coord;
+	
+	//ray_generation
+	vec3 direction = normalize(pixelCoord - eye_coord);
+	ray r;
+	r.dir = direction;
+	r.ori = pixelCoord;
+
+	trace_ray(r);
+
+    ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
+    imageStore(imgOutput, texelCoord, color_out);
+
+}

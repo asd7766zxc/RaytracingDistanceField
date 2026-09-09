@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36717.8 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VoxelCollision", "VoxelCollision\VoxelCollision.vcxproj", "{8DB03798-1A15-4FA5-9ECB-9A11AAD5F9AA}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RaytracingDistanceField", "RaytracingDistanceField\RaytracingDistanceField.vcxproj", "{8DB03798-1A15-4FA5-9ECB-9A11AAD5F9AA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

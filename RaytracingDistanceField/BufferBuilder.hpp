@@ -146,6 +146,9 @@ public:
 		glBindTexture(GL_TEXTURE_3D, ID);
 		glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0, sx, sy, sz, GL_RED, GL_FLOAT, data);
 	}
+	void Bind() {
+		glBindTexture(GL_TEXTURE_3D, ID);
+	}
 	void MapBuffer(float* ptr) {
 		glBindTexture(GL_TEXTURE_3D, ID);
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, ptr);

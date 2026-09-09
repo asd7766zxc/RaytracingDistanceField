@@ -6,13 +6,15 @@
 #include "VisualRenderer.hpp"
 #include "MeshBuilder.hpp"
 #include "VoxelData.hpp"
-#include "Renderer2D.hpp"
+#include "DF_SliceRenderer.hpp"
+#include "DistanceFieldData.hpp"
+//#include "Renderer2D.hpp"
 
 class Visualization {
 public:
 	VisualRenderer render;
 	VoxelRenderer voxel_render;
-	Renderer2D renderer2D;
+	DF_SliceRenderer df_slice_renderer;
 
 	static void _drawAABB(shared_ptr<Camera> camera,VisualRenderer render,aabb box) {
 		auto model = mat4::trans(box.getMinCorner()) \
@@ -23,9 +25,13 @@ public:
 	void drawAABB(shared_ptr<Camera> camera, aabb box) {
 		_drawAABB(camera,render,box);
 	}
-	static void _drawDF(Renderer2D renderer) {
+	static void _drawDF(DF_SliceRenderer renderer,DistanceFieldData df_data,float slice = .5) {
+		df_data.df_buffer.Bind();
+		renderer.draw(vec3(0, 0, 0), 256, 256, slice, df_data.longest_axis_length * df_data.df_size);
 	}
-
+	void drawDF(DistanceFieldData df_data, float slice = 0.5f) {
+		_drawDF(df_slice_renderer, df_data,slice);
+	}
 	static void _drawPoint(shared_ptr<Camera> camera, VisualRenderer render, vec3 point) {
 		auto model = mat4::trans(point) \
 			* mat4::scale(0.02);

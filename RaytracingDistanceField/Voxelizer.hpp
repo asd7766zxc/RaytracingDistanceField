@@ -57,7 +57,7 @@ public:
 		TransformVertices(voxel_data.getWorldToVoxelMatrix() * model, mesh);
 
 		tf_buffer.BindShaderBufferLocation(0); // buffer 0 for vertex data
-		
+
 		voxel_data.voxel_buffer.BindLocation(1);
 
 		voxel_surface_p.use();

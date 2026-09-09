@@ -7,10 +7,14 @@ layout(std430, binding = 0) readonly buffer vertexBuffer {
 	float triangles[];
 };
 
-layout(binding = 0, r32f) uniform image3D distance_field;
+layout(binding = 1, r32f) uniform image3D distance_field;
 // the voxel space is [0,1]^3
 
-uniform int df_resolution;
+uniform float df_size;
+uniform int sx;
+uniform int sy;
+uniform int sz;
+
 uniform int vertex_count;
 vec3 projToLineSeg(vec3 p,vec3 a,vec3 b){
 	vec3 ab = b - a;// ab
@@ -21,8 +25,9 @@ vec3 projToLineSeg(vec3 p,vec3 a,vec3 b){
 #define M_PI 3.1415926535897932384626433832795
 void main(){
 	ivec3 voxelCoord = ivec3(gl_GlobalInvocationID.xyz);
-	if(voxelCoord.x >=  df_resolution|| voxelCoord.y >=  df_resolution|| voxelCoord.z >= df_resolution) return;
-	vec3 p = vec3(voxelCoord.xyz) / float(df_resolution-1);
+	if(voxelCoord.x >=  sx|| voxelCoord.y >=  sy|| voxelCoord.z >= sz) return;
+	vec3 p = vec3(voxelCoord.xyz) * df_size;
+
 	float d = 1000000;
 	bool fg = false;
 	bool interior = false; // check if is inside the mesh
@@ -90,6 +95,6 @@ void main(){
 	}
 	interior = (abs(winding) >= 0.01f); 
 	interior = false;
-	winding /= 2 * M_PI;
+	winding /= 2 * M_PI; 
 	imageStore(distance_field,voxelCoord,vec4(interior ? -d : d,1,1,1));
 }

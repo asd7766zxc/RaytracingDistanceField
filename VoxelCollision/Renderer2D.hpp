@@ -1,4 +1,0 @@
-class Renderer2D {
-
-
-};

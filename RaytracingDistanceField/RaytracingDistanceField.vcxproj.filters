@@ -40,6 +40,9 @@
     <Filter Include="Shaders\DistanceField">
       <UniqueIdentifier>{32f539b5-bbe8-4914-bf81-6815f2625b46}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Shaders\Visualization">
+      <UniqueIdentifier>{ceb2b90c-dc5f-43ff-9c4d-3d80bf9e8e39}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -158,7 +161,13 @@
     <ClInclude Include="DistanceFieldData.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Renderer2D.hpp">
+    <ClInclude Include="GameObject.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DF_SliceRenderer.hpp">
+      <Filter>Header Files\Visualization</Filter>
+    </ClInclude>
+    <ClInclude Include="DistanceFieldGenerator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -182,6 +191,24 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="df_naive.comp">
+      <Filter>Shaders\DistanceField</Filter>
+    </None>
+    <None Include="raytrace.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="raytrace_display.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="raytrace_display.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="df_visualize.frag">
+      <Filter>Shaders\Visualization</Filter>
+    </None>
+    <None Include="df_visualize.vert">
+      <Filter>Shaders\Visualization</Filter>
+    </None>
+    <None Include="df_transform.vert">
       <Filter>Shaders\DistanceField</Filter>
     </None>
   </ItemGroup>
