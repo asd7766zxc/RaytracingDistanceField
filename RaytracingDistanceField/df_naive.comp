@@ -27,8 +27,7 @@ void main(){
 	ivec3 voxelCoord = ivec3(gl_GlobalInvocationID.xyz);
 	if(voxelCoord.x >=  sx|| voxelCoord.y >=  sy|| voxelCoord.z >= sz) return;
 	vec3 p = vec3(voxelCoord.xyz) * df_size;
-
-	float d = 1000000;
+	float d = 100;
 	bool fg = false;
 	bool interior = false; // check if is inside the mesh
 	float winding = 0.0f;
@@ -37,6 +36,7 @@ void main(){
 		vec3 v1 = vec3(triangles[i * 3 + 3],triangles[i * 3 + 4],triangles[i * 3 + 5]);
 		vec3 v2 = vec3(triangles[i * 3 + 6],triangles[i * 3 + 7],triangles[i * 3 + 8]);	
 		
+		// vec3 N = vec3(normals[i + 0],normals[i + 1],normals[i + 2]);
 
 		d = min(d,distance(p,v0));
 		d = min(d,distance(p,v1));
@@ -94,7 +94,6 @@ void main(){
 		// calculate the winding number
 	}
 	interior = (abs(winding) >= 0.01f); 
-	interior = false;
-	winding /= 2 * M_PI; 
+	winding /= 2 * M_PI;
 	imageStore(distance_field,voxelCoord,vec4(interior ? -d : d,1,1,1));
 }

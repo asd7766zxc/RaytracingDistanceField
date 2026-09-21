@@ -57,6 +57,19 @@ public:
 		y = interval();
 		z = interval();
 	}
+	void expand(float scaling) {
+		float xs = x.size();
+		x.min -= scaling * xs;
+		x.max += scaling * xs;
+
+		float ys = y.size();
+		y.min -= scaling * ys;
+		y.max += scaling * ys;
+
+		float zs = z.size();
+		z.min -= scaling * zs;
+		z.max += scaling * zs;
+	}
 	int longestAxis() const {
 		float x_size = x.size();
 		float y_size = y.size();
@@ -70,5 +83,8 @@ public:
 	}
 	vec3 getMaxCorner() const {
 		return vec3(x.max, y.max, z.max);
+	}
+	vec3 size() const {
+		return vec3(x.size(),y.size(),z.size());
 	}
 };

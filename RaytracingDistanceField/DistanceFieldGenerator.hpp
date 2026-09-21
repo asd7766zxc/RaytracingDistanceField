@@ -42,8 +42,8 @@ public:
 
 	void generateDistanceField(DistanceFieldData df_data, shared_ptr<Mesh> mesh) {
 		clock_t start_time = clock();
-		TransformVertices(df_data.getModelToDFMatrix(), mesh);
-
+		 TransformVertices(mat4::trans(df_data.df_box.size() * 0.5) * mat4::scale(0.75) * mat4::trans(-df_data.df_box.size()*0.5-df_data.df_box.getMinCorner()), mesh);
+		//TransformVertices(mat4::trans(-df_data.df_box.getMinCorner()), mesh);
 		naive_program.use();
 		naive_program.setFloat("df_size", df_data.df_size);
 		naive_program.setInt("vertex_count", mesh->vertex_count);
@@ -58,7 +58,7 @@ public:
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
 		clock_t end_time = clock();
 
-		std::cout << "distance field calculated for model: " << mesh->VAO << " using " << (end_time - start_time) / (float)CLOCKS_PER_SEC << " seconds." << std::endl;
+		std::cout << std::endl << "distance field calculated for model: " << mesh->VAO << " using " << (end_time - start_time) / (float)CLOCKS_PER_SEC << " seconds." << std::endl;
 	}
 	//TODO: hash the mesh for storing df cache
 };

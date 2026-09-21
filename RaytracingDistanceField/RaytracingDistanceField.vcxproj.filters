@@ -105,6 +105,12 @@
     <ClCompile Include="DistanceFieldData.cpp">
       <Filter>Header Files</Filter>
     </ClCompile>
+    <ClCompile Include="RayTracer.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BufferBuilder.cpp">
+      <Filter>Header Files\ShaderPipeline</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Player.hpp">
@@ -170,6 +176,15 @@
     <ClInclude Include="DistanceFieldGenerator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RayTracer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DFMesh.hpp">
+      <Filter>Header Files\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="PhotonTracer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="defaultShade.frag">
@@ -210,6 +225,18 @@
     </None>
     <None Include="df_transform.vert">
       <Filter>Shaders\DistanceField</Filter>
+    </None>
+    <None Include="photontrace.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="guassian_blur.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="clear_texture.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="temporal_accumulation.comp">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

@@ -1,0 +1,473 @@
+#version 430 core
+#extension GL_ARB_bindless_texture : require
+#extension GL_ARB_gpu_shader_int64 : require
+
+// 64 photons per invocation
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+layout (r32ui, binding = 3) uniform uimage2D caustic_map_r;
+layout (r32ui, binding = 4) uniform uimage2D caustic_map_g;
+layout (r32ui, binding = 5) uniform uimage2D caustic_map_b;
+
+//ground as texture 
+uniform vec3 groundMin; //min corner
+uniform vec3 groundMax;
+
+uniform int photon_count;
+uniform vec3 lightPos;
+uniform vec3 intensity;
+uniform float frame_seed;
+
+
+// ---- RNG ----
+uint rngState;
+float randf() {
+    rngState = rngState * 1664525u + 1013904223u;
+    return float(rngState >> 8) / float(1u << 24);
+}
+vec3 randomUnitVector() {
+    float z = 1.0 - 2.0 * randf();
+    float r = sqrt(max(0.0, 1.0 - z*z));
+    float phi = 6.2831853 * randf();
+    return vec3(r*cos(phi), r*sin(phi), z);
+}
+
+// Random from internet resources 
+// random is important for sampling 
+
+
+struct ray {
+	vec3 ori;
+	vec3 dir;
+	vec3 at(float t){
+		return t * dir + ori;
+	}
+};
+
+
+struct df_object{
+	mat4 worldToModel;
+	uint64_t texture_handle;
+	vec4 df_scale;
+	vec4 material;
+	vec4 brdf;
+	ivec4 type;
+	float df_size;
+};
+
+layout(std430, binding = 2) buffer DistanceFieldHandles {
+	df_object objects[];
+};
+
+uniform int objects_count;
+vec4 color_out = vec4(0.0, 0.0, 0.0, 1.0);
+
+const float eps = 1e-2;
+
+float AnalyticSphere(vec3 p){
+	 p -= vec3(0,1,0);
+	return (length(p) - 0.5);
+}
+vec3 opTwist(in vec3 p)
+{
+    const float k = 0.5; // or some other amount
+    float c = cos(k*p.y);
+    float s = sin(k*p.y);
+    mat2  m = mat2(c,-s,s,c);
+    vec3  q = vec3(m*p.xz,p.y);
+    return q;
+}
+float GetDistance(vec3 pos,int i){
+	pos = opTwist(pos);
+	vec3 p = (objects[i].worldToModel * vec4(pos,1.0)).xyz;
+	sampler3D e = sampler3D(objects[i].texture_handle);
+	return texture(e,p / objects[i].df_scale.xyz).r;
+}
+float analyticBox(vec3 p){
+	p = p - vec3(0,4,0);
+	vec3 b = vec3(1);
+	vec3 q = abs(p) - b;
+	return length(max(q,0.0)) + min(max(q.x,max(q.y,q.z)),0.0);
+}
+float GroundSDF(vec3 p){
+	return p.y;
+}
+float distanceMinAll(vec3 p,out int hitted_id){
+	float dis = 10000.0;
+	for(int i = 0; i < objects_count;++i){
+		float d = GetDistance(p,i);
+		if(d < dis){
+			dis = d;
+			hitted_id = i;
+		}
+	}
+	float d = analyticBox(p);
+	if(d < dis){
+		dis = d;
+		hitted_id = objects_count;
+	}/*
+	d = AnalyticSphere(p);
+	if(d < dis){
+		dis = d;
+		hitted_id = objects_count + 1;	
+	}*/
+	d = GroundSDF(p);
+	if(d < dis){
+		dis = d;
+		hitted_id = objects_count + 2;	
+	}
+	return dis;
+}
+float traceAllDistance(ray r,out int hitted_id,out bool inside){
+	float dis = 1000;
+	vec3 o = r.ori;
+	float t = 0.0f;
+	int s = 0;
+	float raw_dis;
+	do{
+		raw_dis = distanceMinAll(o,hitted_id);
+		inside = raw_dis < 0;
+		dis = abs(raw_dis);
+		t += dis;
+		o = r.dir * t + r.ori;
+		++s;
+	}while(dis > eps && s < 50);
+	if(dis < eps) return t;
+	return -1;
+}
+
+const float h = 0.02;
+vec3 DF_Gradient(vec3 position){
+	vec3 pos = position;
+	int hitted = 0;
+	float x = pos.x;
+	float y = pos.y;
+	float z = pos.z;
+	float dx = (distanceMinAll(vec3(x+h,y,z),hitted) - distanceMinAll(vec3(x-h,y,z),hitted)) / (2*h);
+	float dy = (distanceMinAll(vec3(x,y+h,z),hitted) - distanceMinAll(vec3(x,y-h,z),hitted)) / (2*h);
+	float dz = (distanceMinAll(vec3(x,y,z+h),hitted) - distanceMinAll(vec3(x,y,z-h),hitted)) / (2*h);
+	return normalize(vec3(dx,dy,dz));
+}
+void trace_ray(ray r,out vec3 normal,out bool hit,out int hitted_id,out float t,out bool inside){
+	t = traceAllDistance(r,hitted_id,inside);
+	if(t >= 0.0){
+		normal = DF_Gradient(r.at(t));
+		hit = true;
+	}else{
+		hit = false;
+	}
+}
+
+const int bounce_count = 20;
+vec3 raycolor_list[bounce_count];
+
+void main(){
+	int indx = int(gl_GlobalInvocationID.x);
+	if(indx >= photon_count) return;
+
+
+
+	rngState = indx * 1973u + uint(frame_seed) * 9277u + 1u;
+	
+	ray r;
+	r.ori = lightPos;
+	r.dir = randomUnitVector();
+
+	vec3 flux = intensity / float(photon_count); //per area
+
+
+	vec3 normal;
+	bool hit;
+	int hitted_id;
+	vec3 final_color = vec3(1);
+	vec3 imm_color = vec3(1);
+	float t;
+	bool glass_inside = false;
+	bool has_refracted = false;
+
+	for(int i = 0; i < bounce_count;++i){
+		bool inside = false;
+		trace_ray(r,normal,hit,hitted_id,t,inside);
+		if(hitted_id == objects_count + 1){
+			normal = normalize(r.at(t) - vec3(0,1,0));
+		}
+		if(dot(normal,r.dir) >= 0.0){
+			normal = -normal;
+			inside = true;
+		}else{
+			inside = false;
+		}
+
+		if(hit){
+			if(hitted_id < objects_count){
+				int hitted_type = objects[hitted_id].type.x;
+				vec3 hitted_brdf = objects[hitted_id].brdf.xyz;
+				bool breaked = false;
+				switch(hitted_type){
+					case 0:{ //diffuse
+						
+						break;	
+					}
+					case 1:{ //specular
+						vec3 d = reflect(r.dir,normal);
+						vec3 p = r.at(t) + normal * 0.02;
+						r.ori = p;
+						r.dir = d;
+
+						break;
+					}
+					case 2:{ //emmisive
+						imm_color *= vec3(1,1,1);
+						final_color *= vec3(1);
+						breaked = true;
+						break;
+					}
+					case 3:{ //dirlectric
+							float refraction_index = 1.5;
+							float ri = !inside ? (1.0 / refraction_index) : refraction_index;
+							vec3 d = normalize(r.dir);
+
+							float cs = min(dot(-d,normal), 1.0);
+							float sc = sqrt(1.0 - cs * cs);
+							bool cannot = ri * sc > 1.0;
+							vec3 nd;
+							if(cannot){
+								nd = reflect(d,normal);
+								// nd = d;
+							}
+							else nd = refract(d,normal,ri);
+
+							vec3 p = r.at(t) + nd * 0.05;
+							r.ori = p;
+							r.dir = nd;
+							has_refracted = true;
+						break;
+					}
+				}
+			}else{
+				if(hitted_id == objects_count + 2 && has_refracted){
+					normal = normalize(normal);
+					vec3 gpos = r.at(t);
+					vec2 uv = (gpos.xz - groundMin.xy) / (groundMax - groundMin).xy;
+					if(all(greaterThan(uv,vec2(0.0))) && all(lessThan(uv,vec2(1.0)))){
+						uint val = uint(clamp(imm_color.x * flux * 100000 * 0.15,0.0,1e7));
+						vec2 fpos = uv * vec2(imageSize(caustic_map_r)) - 0.5;
+						ivec2 p00 = ivec2(floor(fpos));
+						vec2 f = fract(fpos);
+						float weights[4] = { (1-f.x)*(1-f.y), f.x*(1-f.y), (1-f.x)*f.y, f.x*f.y };
+						ivec2 offsets[4] = { ivec2(0,0), ivec2(1,0), ivec2(0,1), ivec2(1,1) };
+						for (int i = 0; i < 4; ++i) {
+							ivec2 p = p00 + offsets[i];
+							uint v = uint(float(val) * weights[i]);
+							imageAtomicAdd(caustic_map_r, p, v);
+						}
+						//for test	
+					}
+					break;
+				}else if(hitted_id == objects_count){
+					vec3 d = reflect(r.dir,normal);
+					vec3 p = r.at(t) + normal * 0.02;
+					r.ori = p;
+					r.dir = d;
+					imm_color = imm_color * vec3(0.7,0.6,0.5);
+				}
+			}
+		}else{
+			final_color = vec3(0);
+			break;
+		}
+	}
+	r.ori = lightPos;
+	r.dir = randomUnitVector();
+	imm_color = vec3(1);
+	hit = false;
+	has_refracted = false;
+	for(int i = 0; i < bounce_count;++i){
+		bool inside = false;
+		trace_ray(r,normal,hit,hitted_id,t,inside);
+		if(hitted_id == objects_count + 1){
+			normal = normalize(r.at(t) - vec3(0,1,0));
+		}
+		if(dot(normal,r.dir) >= 0.0){
+			normal = -normal;
+			inside = true;
+		}else{
+			inside = false;
+		}
+
+		if(hit){
+			if(hitted_id < objects_count){
+				int hitted_type = objects[hitted_id].type.x;
+				vec3 hitted_brdf = objects[hitted_id].brdf.xyz;
+				bool breaked = false;
+				switch(hitted_type){
+					case 0:{ //diffuse
+						
+						break;	
+					}
+					case 1:{ //specular
+						vec3 d = reflect(r.dir,normal);
+						vec3 p = r.at(t) + normal * 0.02;
+						r.ori = p;
+						r.dir = d;
+
+						break;
+					}
+					case 2:{ //emmisive
+						imm_color *= vec3(1,1,1);
+						final_color *= vec3(1);
+						breaked = true;
+						break;
+					}
+					case 3:{ //dirlectric
+							float refraction_index = 1.4;
+							float ri = !inside ? (1.0 / refraction_index) : refraction_index;
+							vec3 d = normalize(r.dir);
+
+							float cs = min(dot(-d,normal), 1.0);
+							float sc = sqrt(1.0 - cs * cs);
+							bool cannot = ri * sc > 1.0;
+							vec3 nd;
+							if(cannot){
+								nd = reflect(d,normal);
+								// nd = d;
+							}
+							else nd = refract(d,normal,ri);
+
+							vec3 p = r.at(t) + nd * 0.05;
+							r.ori = p;
+							r.dir = nd;
+							has_refracted = true;
+						break;
+					}
+				}
+			}else{
+				if(hitted_id == objects_count + 2 && has_refracted){
+					normal = normalize(normal);
+					vec3 gpos = r.at(t);
+					vec2 uv = (gpos.xz - groundMin.xy) / (groundMax - groundMin).xy;
+					if(all(greaterThan(uv,vec2(0.0))) && all(lessThan(uv,vec2(1.0)))){
+						uint val = uint(clamp(imm_color.x * flux * 100000 * 0.15,0.0,1e7));
+						vec2 fpos = uv * vec2(imageSize(caustic_map_g)) - 0.5;
+						ivec2 p00 = ivec2(floor(fpos));
+						vec2 f = fract(fpos);
+						float weights[4] = { (1-f.x)*(1-f.y), f.x*(1-f.y), (1-f.x)*f.y, f.x*f.y };
+						ivec2 offsets[4] = { ivec2(0,0), ivec2(1,0), ivec2(0,1), ivec2(1,1) };
+						for (int i = 0; i < 4; ++i) {
+							ivec2 p = p00 + offsets[i];
+							uint v = uint(float(val) * weights[i]);
+							imageAtomicAdd(caustic_map_g, p, v);
+						}
+						//for test	
+					}
+					break;
+				}else if(hitted_id == objects_count){
+					vec3 d = reflect(r.dir,normal);
+					vec3 p = r.at(t) + normal * 0.02;
+					r.ori = p;
+					r.dir = d;
+					imm_color = imm_color * vec3(0.7,0.6,0.5);
+				}
+			}
+		}else{
+			final_color = vec3(0);
+			break;
+		}
+	}
+	r.ori = lightPos;
+	r.dir = randomUnitVector();
+	imm_color = vec3(1);
+	hit = false;
+	has_refracted = false;
+	for(int i = 0; i < bounce_count;++i){
+		bool inside = false;
+		trace_ray(r,normal,hit,hitted_id,t,inside);
+		if(hitted_id == objects_count + 1){
+			normal = normalize(r.at(t) - vec3(0,1,0));
+		}
+		if(dot(normal,r.dir) >= 0.0){
+			normal = -normal;
+			inside = true;
+		}else{
+			inside = false;
+		}
+
+		if(hit){
+			if(hitted_id < objects_count){
+				int hitted_type = objects[hitted_id].type.x;
+				vec3 hitted_brdf = objects[hitted_id].brdf.xyz;
+				bool breaked = false;
+				switch(hitted_type){
+					case 0:{ //diffuse
+						
+						break;	
+					}
+					case 1:{ //specular
+						vec3 d = reflect(r.dir,normal);
+						vec3 p = r.at(t) + normal * 0.02;
+						r.ori = p;
+						r.dir = d;
+
+						break;
+					}
+					case 2:{ //emmisive
+						imm_color *= vec3(1,1,1);
+						final_color *= vec3(1);
+						breaked = true;
+						break;
+					}
+					case 3:{ //dirlectric
+							float refraction_index = 1.3;
+							float ri = !inside ? (1.0 / refraction_index) : refraction_index;
+							vec3 d = normalize(r.dir);
+
+							float cs = min(dot(-d,normal), 1.0);
+							float sc = sqrt(1.0 - cs * cs);
+							bool cannot = ri * sc > 1.0;
+							vec3 nd;
+							if(cannot){
+								nd = reflect(d,normal);
+								// nd = d;
+							}
+							else nd = refract(d,normal,ri);
+
+							vec3 p = r.at(t) + nd * 0.05;
+							r.ori = p;
+							r.dir = nd;
+							has_refracted = true;
+						break;
+					}
+				}
+			}else{
+				if(hitted_id == objects_count + 2 && has_refracted){
+					normal = normalize(normal);
+					vec3 gpos = r.at(t);
+					vec2 uv = (gpos.xz - groundMin.xy) / (groundMax - groundMin).xy;
+					if(all(greaterThan(uv,vec2(0.0))) && all(lessThan(uv,vec2(1.0)))){
+						uint val = uint(clamp(imm_color.x * flux * 100000 * 0.15,0.0,1e7));
+						vec2 fpos = uv * vec2(imageSize(caustic_map_b)) - 0.5;
+						ivec2 p00 = ivec2(floor(fpos));
+						vec2 f = fract(fpos);
+						float weights[4] = { (1-f.x)*(1-f.y), f.x*(1-f.y), (1-f.x)*f.y, f.x*f.y };
+						ivec2 offsets[4] = { ivec2(0,0), ivec2(1,0), ivec2(0,1), ivec2(1,1) };
+						for (int i = 0; i < 4; ++i) {
+							ivec2 p = p00 + offsets[i];
+							uint v = uint(float(val) * weights[i]);
+							imageAtomicAdd(caustic_map_b, p, v);
+						}
+						//for test	
+					}
+					break;
+				}else if(hitted_id == objects_count){
+					vec3 d = reflect(r.dir,normal);
+					vec3 p = r.at(t) + normal * 0.02;
+					r.ori = p;
+					r.dir = d;
+					imm_color = imm_color * vec3(0.7,0.6,0.5);
+				}
+			}
+		}else{
+			final_color = vec3(0);
+			break;
+		}
+	}
+}

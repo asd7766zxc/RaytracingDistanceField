@@ -15,6 +15,8 @@ public:
 	GLuint VAO = 0, VBO = 0;
 	ShaderArrayBuffer<Vertex> verticesBuffer;
 	std::vector<Vertex> vertices;
+	std::vector<float> unstructured_vertices;
+
 	aabb primitive_aabb;
 
 	int vertex_count = -1;
@@ -36,6 +38,7 @@ public:
 			v.texcoord = vec3(_vertices[i * 8 + 6], _vertices[i * 8 + 7], 0);
 			vertices.push_back(v);
 		}
+		unstructured_vertices = std::vector<float>(_vertices, _vertices + vertex_count * 8);
 	}
 	void genVertexBufferForDraw(float* _vertices, int count) {
 		glGenBuffers(1, &VBO);

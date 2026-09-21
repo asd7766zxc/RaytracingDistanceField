@@ -22,16 +22,22 @@
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "ModelLoader.hpp"
+#include "RayTracer.hpp"
+#include "DFMesh.hpp"
+#include "PhotonTracer.hpp"
 
 
 shared_ptr<Player> player;
 int window_width = 800, window_height = 800;
-void renderQuad();
+shared_ptr<RayTracer> raytracer;
 void window_resize(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 	player->camera->windowResize(width, height);
+
 	window_width = width;
 	window_height = height;
+
+	raytracer->update_window(width, height);
 }
 BYTE tmp[128 * 128 * 128];
 signed main() {
@@ -107,51 +113,54 @@ signed main() {
 	glViewport(0, 0, window_width, window_height);
 	player->camera->windowResize(window_width, window_height);
 	player->updateView();
-
-	shared_ptr<ModelLoader> teapot_nolid_raw = make_shared<ModelLoader>("utah_teapot_nolid.obj");
-	shared_ptr<Mesh> teapot_nolid = make_shared<Mesh>(teapot_nolid_raw->vertices, teapot_nolid_raw->vertex_size * 8 * 4, teapot_nolid_raw->vertex_size);
-	auto cube = MeshBuilder::Cube();
 	
-	ShaderProgram RTdisplay = ShaderProgram({
-			Shader("raytrace_display.vert", GL_VERTEX_SHADER),
-			Shader("raytrace_display.frag", GL_FRAGMENT_SHADER)
-		});
 
 	ShaderProgram df_visual = ShaderProgram({
 			Shader("df_visualize.vert", GL_VERTEX_SHADER),
 			Shader("df_visualize.frag", GL_FRAGMENT_SHADER)
 		});
-	GameObject obj;
 	Voxelizer voxelizer;
-	obj.mesh = cube;
-	obj.scale = vec3(2);
+
+	PhotonTracer photontracer(2048, 2048);
 
 	DefaultRenderer renderer;
-	Visualization visualizer;
+	raytracer = make_shared<RayTracer>();
 	
-	player->rx = -0.738000691;
-	player->yx = -0.0299994592;
-	player->position = vec3(-0.512054026, 3.84784102, 5.60283041);
+	//player->rx = -0.738000691;
+	//player->yx = -0.0299994592;
+	//player->position = vec3(-0.512054026, 3.84784102, 5.60283041);
+	player->position = vec3(0, 0, 5);
 	//aabb culling_box = aabb(vec3(2.8, 2, -.5), vec3(3.5, 2.6, .5));
 	aabb culling_box = aabb(vec3(-1),vec3(1));
-	VoxelData data = voxelizer.buildVoxelData(culling_box,128);
-
-	DistanceFieldData df_data = DistanceFieldData(cube->primitive_aabb, 10);
-
-	DistanceFieldGenerator df_generator;
-
-	df_generator.generateDistanceField(df_data, cube);
-
 	float delta_stamp = 0.0f;
 	
 	auto start = std::chrono::steady_clock::now();
+	shared_ptr<ModelLoader> teapot_nolid_raw = make_shared<ModelLoader>("utah_teapot_nolid.obj");
+	shared_ptr<Mesh> teapot_nolid = make_shared<Mesh>(teapot_nolid_raw->vertices, teapot_nolid_raw->vertex_size * 8 * 4, teapot_nolid_raw->vertex_size);
+	DistanceFieldGenerator df_generator;
+	auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
+	auto box = DFMesh(df_generator, MeshBuilder::Sphere(10), mat4::identity(), 0.5, 10);
+	vector<GameObject> objs;
+	GameObject obj,obj1,obj3;
+	obj.df_mesh = make_shared<DFMesh>(dfmesh);
+	obj1.df_mesh = obj.df_mesh;
+	obj1.position = vec3(1);
+	obj3.type.x = 3;
+	obj3.position = vec3(1.6, 1.5, 1.6);
+	obj3.df_mesh = make_shared<DFMesh>(dfmesh);
 	
-	voxelizer.Voxelize(data, mat4::identity(), cube);
-	
+	//objs.push_back(obj3);
+	//objs.push_back(obj1);
+	objs.push_back(obj3);
 	auto end = std::chrono::steady_clock::now();
 	
 	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 	std::cout << duration.count() << "microsecs" << '\n';
+	raytracer->update_window(window_width, window_height);
+	raytracer->setupScence();
+
+
+
 	while (!glfwWindowShouldClose(window)) {
 		glViewport(0, 0, window_width, window_height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -160,21 +169,19 @@ signed main() {
 		float delta = glfwGetTime() - delta_stamp;
 		delta_stamp = glfwGetTime();
 
-		obj.orientation = obj.orientation.rotate(vec3(0, 1, 0) * 0.1f);
-		obj.orientation.normalize();
 		player->updateCameraPos(window, delta);
-		renderer.draw(player->camera, vec4(1), obj.getModelMatrix(), obj.mesh);
-		//visualizer.drawVoxel(player->camera,data);
-		//visualizer.drawAABB(player->camera, culling_box);
-		
-		//glDispatchCompute(window_width, window_height, 1);
-		//glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		for (auto c : objs) c.prepareDFData();
+		 vector<DF_Object> df_datas;
+		for (auto c : objs) df_datas.push_back(c.getDFOjbect());
+		//obj.orientation = obj.orientation.rotate(vec3(0.1, 0, 0));
+
+		photontracer.LoadDistanceFieldDatas(df_datas);
+		photontracer.render(1000000, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
+
+		raytracer->LoadDistanceFieldDatas(df_datas);
+		raytracer->render(player->camera, vec3(-20), vec3(20));
 
 
-		//RTdisplay.use();
-		//renderQuad();
-
-		visualizer.drawDF(df_data,std::abs(std::cos(glfwGetTime())));
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
@@ -185,33 +192,3 @@ signed main() {
 	glfwTerminate();
 	return 0;
 }
-
-unsigned int quadVAO = 0;
-unsigned int quadVBO;
-void renderQuad()
-{
-	if (quadVAO == 0)
-	{
-		float quadVertices[] = {
-			// positions        // texture Coords
-			-1.0f,  1.0f, 0.0f, 0.0f, 0.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f, 1.0f,
-			 1.0f,  1.0f, 0.0f, 1.0f, 0.0f,
-			 1.0f, -1.0f, 0.0f, 1.0f, 1.0f,
-		};
-		// setup plane VAO
-		glGenVertexArrays(1, &quadVAO);
-		glGenBuffers(1, &quadVBO);
-		glBindVertexArray(quadVAO);
-		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
-		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
-		glEnableVertexAttribArray(0);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-		glEnableVertexAttribArray(1);
-		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	}
-	glBindVertexArray(quadVAO);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-	glBindVertexArray(0);
-}
-

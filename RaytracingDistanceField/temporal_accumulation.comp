@@ -1,0 +1,14 @@
+#version 430 core
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(r32ui, binding = 3) uniform uimage2D imgR;
+layout(r32ui, binding = 4) uniform uimage2D imgG;
+layout(r32ui, binding = 5) uniform uimage2D imgB;
+
+void main() {
+    ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+    if (p.x >= imageSize(imgR).x || p.y >= imageSize(imgR).y) return;
+    float k = 0.95;
+    imageStore(imgR, p, uvec4(uint(float(imageLoad(imgR, p).r) * k)));
+    imageStore(imgG, p, uvec4(uint(float(imageLoad(imgG, p).r) * k)));
+    imageStore(imgB, p, uvec4(uint(float(imageLoad(imgB, p).r) * k)));
+}

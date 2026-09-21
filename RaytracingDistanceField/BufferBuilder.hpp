@@ -125,6 +125,7 @@ public:
 class SingleFloatImageBuffer3D {
 public:
 	GLuint ID = 0;
+	GLuint64 handle = 0;
 	SingleFloatImageBuffer3D() { // for empty handle
 	}
 	int sx = 0, sy = 0, sz = 0;
@@ -138,6 +139,8 @@ public:
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		handle = glGetTextureHandleARB(ID);
+
 	}
 	void BindLocation(GLuint location) {
 		glBindImageTexture(location, ID, 0, GL_TRUE, 0, GL_READ_WRITE, GL_R32F);
@@ -149,10 +152,91 @@ public:
 	void Bind() {
 		glBindTexture(GL_TEXTURE_3D, ID);
 	}
+	void MakeResident() { // make buffer ready
+		glMakeTextureHandleResidentARB(handle);
+	}
 	void MapBuffer(float* ptr) {
 		glBindTexture(GL_TEXTURE_3D, ID);
 		glGetTexImage(GL_TEXTURE_3D, 0, GL_RED, GL_FLOAT, ptr);
 	}
+};
+
+class RGBA32UIntImageBuffer2D {
+public:
+	GLuint ID = 0;
+	GLuint64 handle = 0;
+	RGBA32UIntImageBuffer2D() { // for empty handle
+	}
+	int sx = 0, sy = 0;
+	RGBA32UIntImageBuffer2D(int sx, int sy) : sx(sx), sy(sy) {
+		glGenTextures(1, &ID);
+		glBindTexture(GL_TEXTURE_2D, ID);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32UI, sx, sy, 0, GL_RGBA_INTEGER, GL_UNSIGNED_INT, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		handle = glGetTextureHandleARB(ID);
+
+	}
+	void BindLocation(GLuint location) {
+		glBindImageTexture(location, ID, 0, GL_TRUE, 0, GL_READ_WRITE, GL_RGBA32UI);
+	}
+	void BufferData(float* data) {
+		//glBindTexture(GL_TEXTURE_3D, ID);
+
+	}
+	void Bind() {
+		//glBindTexture(GL_TEXTURE_3D, ID);
+	}
+	void MakeResident() { // make buffer ready
+		glMakeTextureHandleResidentARB(handle);
+	}
+	void MapBuffer(float* ptr) {
+		
+	}
+	void Clear();
+};
+class R32UIntImageBuffer2D {
+public:
+	GLuint ID = 0;
+	GLuint64 handle = 0;
+	R32UIntImageBuffer2D() { // for empty handle
+	}
+	int sx = 0, sy = 0;
+	R32UIntImageBuffer2D(int sx, int sy) : sx(sx), sy(sy) {
+		glGenTextures(1, &ID);
+		glBindTexture(GL_TEXTURE_2D, ID);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, sx, sy, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		handle = glGetTextureHandleARB(ID);
+
+	}
+	void BindLocation(GLuint location) {
+		glBindImageTexture(location, ID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
+	}
+	void BufferData(float* data) {
+		//glBindTexture(GL_TEXTURE_3D, ID);
+
+	}
+	void Bind() {
+		//glBindTexture(GL_TEXTURE_3D, ID);
+	}
+	void MakeResident() { // make buffer ready
+		glMakeTextureHandleResidentARB(handle);
+	}
+	void MapBuffer(uint32_t* ptr) {
+		glBindTexture(GL_TEXTURE_2D, ID);
+		glGetTexImage(GL_TEXTURE_2D, 0, GL_RED_INTEGER, GL_UNSIGNED_INT,ptr);
+	}
+	void Clear();
 };
 class BufferBuilder {
 public:

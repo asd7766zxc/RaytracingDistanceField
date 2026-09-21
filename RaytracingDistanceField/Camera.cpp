@@ -45,6 +45,8 @@ void Camera::make_ortho(int w, int h, float sz = 10) {
 }
 
 void Camera::windowResize(int w, int h) {
+	width_resolution = w, height_resolution = h;
+	aspect_ratio = (float)(w) / (float)(h);
 	updateProj(w, h, nearp, farp, fov);
 }
 mat4 Camera::getMatrix() const {
@@ -82,4 +84,37 @@ void Camera::ObliqueProj(vec3 pos, vec3 norm, bool clipOppo) {
 	cproj.mt[9] = c.y;
 	cproj.mt[10] = c.z + 1.0f;
 	cproj.mt[11] = c.w;
+}
+
+vec3 Camera::u() const {
+	return vec3(view.mt[0], view.mt[1], view.mt[2]);
+}
+
+vec3 Camera::v() const {
+	return vec3(view.mt[4], view.mt[5], view.mt[6]);
+}
+
+vec3 Camera::w() const {
+	return -vec3(view.mt[8], view.mt[9], view.mt[10]);
+}
+vec3 Camera::getPixelCornerPos() const {
+	vec3 nz = w();
+	nz *= nearp;
+	float width = tan(fov / 2) * nearp;
+	float height = width / aspect_ratio;
+
+	return (-width * u()) + (height * v()) + nz + position;
+}
+vec3 Camera::getPixel00Pos() {
+	vec3 cpos = getPixelCornerPos();
+
+	float width = 2 * tan(fov / 2) * nearp;
+	float height = width / aspect_ratio;
+
+	float dwidth = width / width_resolution;
+	float dheight = height / height_resolution;
+
+	du = dwidth * u();
+	dv = dheight * (-v());
+	return cpos + 0.5 * du + 0.5 * dv;
 }

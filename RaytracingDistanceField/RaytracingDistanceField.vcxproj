@@ -143,6 +143,7 @@
     <ClCompile Include="..\imgui\imgui_impl_opengl3.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="BufferBuilder.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="DistanceFieldData.cpp" />
     <ClCompile Include="glad.c" />
@@ -151,6 +152,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="MathUtilities.hpp" />
     <ClCompile Include="ModelLoader.hpp" />
+    <ClCompile Include="RayTracer.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderProgram.cpp" />
     <ClCompile Include="Vec.hpp" />
@@ -163,15 +165,18 @@
     <ClInclude Include="BVH.hpp" />
     <ClInclude Include="Camera.hpp" />
     <ClInclude Include="DefaultRenderer.hpp" />
+    <ClInclude Include="DFMesh.hpp" />
     <ClInclude Include="DistanceFieldData.hpp" />
     <ClInclude Include="DistanceFieldGenerator.hpp" />
     <ClInclude Include="GameObject.hpp" />
     <ClInclude Include="interval.hpp" />
     <ClInclude Include="Mesh.hpp" />
     <ClInclude Include="MeshBuilder.hpp" />
+    <ClInclude Include="PhotonTracer.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="ray.hpp" />
     <ClInclude Include="DF_SliceRenderer.hpp" />
+    <ClInclude Include="RayTracer.hpp" />
     <ClInclude Include="Shader.hpp" />
     <ClInclude Include="ShaderProgram.hpp" />
     <ClInclude Include="Visualization.hpp" />
@@ -181,6 +186,8 @@
     <ClInclude Include="VoxelRenderer.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="guassian_blur.comp" />
+    <None Include="clear_texture.comp" />
     <None Include="defaultShade.frag" />
     <None Include="defaultShade.vert" />
     <None Include="df_naive.comp" />
@@ -188,9 +195,11 @@
     <None Include="df_visualize.frag" />
     <None Include="df_visualize.vert" />
     <None Include="noShade.frag" />
+    <None Include="photontrace.comp" />
     <None Include="raytrace.comp" />
     <None Include="raytrace_display.frag" />
     <None Include="raytrace_display.vert" />
+    <None Include="temporal_accumulation.comp" />
     <None Include="voxelize_transform.vert" />
     <None Include="voxelize_surface.comp" />
     <None Include="voxel_visualize.vert" />

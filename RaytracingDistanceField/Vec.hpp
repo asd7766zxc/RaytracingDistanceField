@@ -151,6 +151,10 @@ public:
 		x /= c, y /= c, z /= c, w /= c;
 	}
 };
+class ivec4 {
+public:
+	int x, y, z, w;
+};
 
 //quaternion
 class quat {
