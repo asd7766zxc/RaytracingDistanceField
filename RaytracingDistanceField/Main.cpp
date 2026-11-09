@@ -126,18 +126,10 @@ signed main() {
 	DefaultRenderer renderer;
 	raytracer = make_shared<RayTracer>();
 	
-	player->rx = -0.690795839;
-	player->yx = 0.500997961;
-	player->position = vec3(-2.42852020, 5.90724897, 8.09748077);
-
-	player->rx = -1.05979550;
-	player->yx = 0.422997892;
-	player->position = vec3(-1.30045557, 0.910367787, 5.60854912);
-
-	player->rx = -0.948795140;
-	player->yx = -0.564002097;
-	player->position = vec3(0.178897172, 3.19909787, 3.39888239);
-	// player->position = vec3(0, 0, 5);
+	//player->rx = -0.738000691;
+	//player->yx = -0.0299994592;
+	//player->position = vec3(-0.512054026, 3.84784102, 5.60283041);
+	player->position = vec3(0, 0, 5);
 	//aabb culling_box = aabb(vec3(2.8, 2, -.5), vec3(3.5, 2.6, .5));
 	aabb culling_box = aabb(vec3(-1),vec3(1));
 	float delta_stamp = 0.0f;
@@ -191,7 +183,8 @@ signed main() {
 		player->updateCameraPos(window, delta);
 		//obj.orientation = obj.orientation.rotate(vec3(0.1, 0, 0));
 
-		photontracer.render(16, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
+		photontracer.LoadDistanceFieldDatas(df_datas);
+		photontracer.render(1000000, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
 
 		raytracer->render(player->camera, vec3(-20), vec3(20));
 		//auto end = std::chrono::steady_clock::now();
