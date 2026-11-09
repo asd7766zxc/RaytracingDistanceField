@@ -126,41 +126,60 @@ signed main() {
 	DefaultRenderer renderer;
 	raytracer = make_shared<RayTracer>();
 	
-	//player->rx = -0.738000691;
-	//player->yx = -0.0299994592;
-	//player->position = vec3(-0.512054026, 3.84784102, 5.60283041);
-	player->position = vec3(0, 0, 5);
+	player->rx = -0.690795839;
+	player->yx = 0.500997961;
+	player->position = vec3(-2.42852020, 5.90724897, 8.09748077);
+
+	player->rx = -1.05979550;
+	player->yx = 0.422997892;
+	player->position = vec3(-1.30045557, 0.910367787, 5.60854912);
+
+	player->rx = -0.948795140;
+	player->yx = -0.564002097;
+	player->position = vec3(0.178897172, 3.19909787, 3.39888239);
+	// player->position = vec3(0, 0, 5);
 	//aabb culling_box = aabb(vec3(2.8, 2, -.5), vec3(3.5, 2.6, .5));
 	aabb culling_box = aabb(vec3(-1),vec3(1));
 	float delta_stamp = 0.0f;
 	
-	auto start = std::chrono::steady_clock::now();
 	shared_ptr<ModelLoader> teapot_nolid_raw = make_shared<ModelLoader>("utah_teapot_nolid.obj");
+	shared_ptr<ModelLoader> rabbit_raw = make_shared<ModelLoader>("bunny.obj");
 	shared_ptr<Mesh> teapot_nolid = make_shared<Mesh>(teapot_nolid_raw->vertices, teapot_nolid_raw->vertex_size * 8 * 4, teapot_nolid_raw->vertex_size);
+	shared_ptr<Mesh> rabbit = make_shared<Mesh>(rabbit_raw->vertices, rabbit_raw->vertex_size * 8 * 4, rabbit_raw->vertex_size);
+
 	DistanceFieldGenerator df_generator;
 	auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
+	auto dfmesh_rabbit = DFMesh(df_generator, rabbit, mat4::identity(), 0.25, 128);
 	auto box = DFMesh(df_generator, MeshBuilder::Sphere(10), mat4::identity(), 0.5, 10);
 	vector<GameObject> objs;
 	GameObject obj,obj1,obj3;
-	obj.df_mesh = make_shared<DFMesh>(dfmesh);
-	obj1.df_mesh = obj.df_mesh;
-	obj1.position = vec3(1);
-	obj3.type.x = 3;
-	obj3.position = vec3(1.6, 1.5, 1.6);
-	obj3.df_mesh = make_shared<DFMesh>(dfmesh);
+	obj.df_mesh = make_shared<DFMesh>(dfmesh_rabbit);
+	obj.position = vec3(-1, 1.5, 1.6);
+	obj.type.x = 3;
+
+
+	//obj3.type.x = 3;
+	//obj3.position = vec3(1.6, 1.5, 1.6);
+	//obj3.df_mesh = make_shared<DFMesh>(dfmesh);
 	
 	//objs.push_back(obj3);
 	//objs.push_back(obj1);
-	objs.push_back(obj3);
-	auto end = std::chrono::steady_clock::now();
+	//objs.push_back(obj3);
+	objs.push_back(obj);
+
+
 	
-	auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-	std::cout << duration.count() << "microsecs" << '\n';
+	auto start = std::chrono::steady_clock::now();
 	raytracer->update_window(window_width, window_height);
 	raytracer->setupScence();
 
 
 
+	for (auto c : objs) c.prepareDFData();
+		vector<DF_Object> df_datas;
+	for (auto c : objs) df_datas.push_back(c.getDFOjbect());
+	photontracer.LoadDistanceFieldDatas(df_datas);
+	raytracer->LoadDistanceFieldDatas(df_datas);
 	while (!glfwWindowShouldClose(window)) {
 		glViewport(0, 0, window_width, window_height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -170,16 +189,14 @@ signed main() {
 		delta_stamp = glfwGetTime();
 
 		player->updateCameraPos(window, delta);
-		for (auto c : objs) c.prepareDFData();
-		 vector<DF_Object> df_datas;
-		for (auto c : objs) df_datas.push_back(c.getDFOjbect());
 		//obj.orientation = obj.orientation.rotate(vec3(0.1, 0, 0));
 
-		photontracer.LoadDistanceFieldDatas(df_datas);
-		photontracer.render(1000000, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
+		photontracer.render(16, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
 
-		raytracer->LoadDistanceFieldDatas(df_datas);
 		raytracer->render(player->camera, vec3(-20), vec3(20));
+		//auto end = std::chrono::steady_clock::now();
+		//auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+		//std::cout << duration.count() << " s" << '\n';
 
 
 		glfwSwapBuffers(window);
