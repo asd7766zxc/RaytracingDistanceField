@@ -1,16 +1,16 @@
 #version 430 core
 #extension GL_ARB_bindless_texture : require
-#extension GL_ARB_gpu_shader_int64 : require
+// #extension GL_ARB_gpu_shader_int64 : require
 
-layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 struct ray {
 	vec3 ori;
 	vec3 dir;
-	vec3 at(float t){
-		return t * dir + ori;
-	}
 };
+vec3 ray_at(ray r,float t){
+	return t * r.dir + r.ori;
+}
 
 uniform vec3 pixel00Coord;
 uniform vec3 du;
@@ -30,7 +30,7 @@ layout (r32ui, binding = 5) uniform uimage2D caustic_map_b;
 
 struct df_object{
 	mat4 worldToModel;
-	uint64_t texture_handle;
+	uvec2 texture_handle;
 	vec4 df_scale;
 	vec4 material;
 	vec4 brdf;
@@ -60,7 +60,7 @@ float AnalyticSphere(vec3 p){
 }
 
 float GetDistance(vec3 pos,int i){
-	pos = opTwist(pos);
+	// pos = opTwist(pos);
 	vec3 p = (objects[i].worldToModel * vec4(pos,1.0)).xyz;
 	sampler3D e = sampler3D(objects[i].texture_handle);
 	return texture(e,p / objects[i].df_scale.xyz).r;
@@ -136,7 +136,7 @@ vec3 DF_Gradient(vec3 position){
 void trace_ray(ray r,out vec3 normal,out bool hit,out int hitted_id,out float t,out bool inside){
 	t = traceAllDistance(r,hitted_id,inside);
 	if(t >= 0.0){
-		normal = DF_Gradient(r.at(t));
+		normal = DF_Gradient(ray_at(r,t));
 		hit = true;
 	}else{
 		hit = false;
@@ -148,8 +148,9 @@ vec3 raycolor_list[bounce_count];
 
 void main(){
 	vec3 pixelRawCoord = vec3(gl_GlobalInvocationID.xy, 0);
+	if(pixelRawCoord.x >= 800 || pixelRawCoord.y >= 800) return;
 	vec3 pixelCoord = pixelRawCoord.x * du + pixelRawCoord.y * dv + pixel00Coord;
-	
+
 	vec3 light_pos = vec3(0,1,0);
 
 	vec3 direction = normalize(pixelCoord - eye_coord);
@@ -168,7 +169,7 @@ void main(){
 		bool inside = false;
 		trace_ray(r,normal,hit,hitted_id,t,inside);
 		if(hitted_id == objects_count + 1){
-			normal = normalize(r.at(t) - vec3(0,1,0));
+			normal = normalize(ray_at(r,t) - vec3(0,1,0));
 		}
 		if(dot(normal,r.dir) >= 0.0){
 			normal = -normal;
@@ -190,7 +191,7 @@ void main(){
 					}
 					case 1:{ //specular
 						vec3 d = reflect(r.dir,normal);
-						vec3 p = r.at(t) + normal * 0.02;
+						vec3 p = ray_at(r,t) + normal * 0.02;
 						r.ori = p;
 						r.dir = d;
 						break;
@@ -216,7 +217,7 @@ void main(){
 							}
 							else nd = refract(d,normal,ri);
 
-							vec3 p = r.at(t) + nd * 0.05;
+							vec3 p = ray_at(r,t) + nd * 0.05;
 							r.ori = p;
 							r.dir = nd;
 						break;
@@ -225,10 +226,10 @@ void main(){
 				if(breaked) break;
 			}else{
 				if(hitted_id == objects_count + 2){
-					vec3 gpos = r.at(t);
+					vec3 gpos = ray_at(r,t);
 					vec2 uv = (gpos.xz - groundMin.xy) / (groundMax - groundMin).xy;
 					normal = normalize(normal);
-					vec3 I = normalize(light_pos - r.at(t));
+					vec3 I = normalize(light_pos - ray_at(r,t));
 					float diffuse = 0.5 * dot(normal,I);
 					diffuse = max(diffuse,0);
 					imm_color = imm_color * vec3(diffuse);
@@ -261,7 +262,7 @@ void main(){
 					break;
 				}else if(hitted_id == objects_count){
 					vec3 d = reflect(r.dir,normal);
-					vec3 p = r.at(t) + normal * 0.02;
+					vec3 p = ray_at(r,t) + normal * 0.02;
 					r.ori = p;
 					r.dir = d;
 					imm_color = imm_color * vec3(0.7,0.6,0.5);

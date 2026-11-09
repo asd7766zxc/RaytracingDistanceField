@@ -126,10 +126,10 @@ signed main() {
 	DefaultRenderer renderer;
 	raytracer = make_shared<RayTracer>();
 	
-	//player->rx = -0.738000691;
-	//player->yx = -0.0299994592;
+	player->rx = -0.857999921;
+	player->yx = -0.819000006;
 	//player->position = vec3(-0.512054026, 3.84784102, 5.60283041);
-	player->position = vec3(0, 0, 5);
+	player->position = vec3(2.98712850, 2.42156434, 3.62160540);
 	//aabb culling_box = aabb(vec3(2.8, 2, -.5), vec3(3.5, 2.6, .5));
 	aabb culling_box = aabb(vec3(-1),vec3(1));
 	float delta_stamp = 0.0f;
@@ -176,7 +176,7 @@ signed main() {
 		//obj.orientation = obj.orientation.rotate(vec3(0.1, 0, 0));
 
 		photontracer.LoadDistanceFieldDatas(df_datas);
-		photontracer.render(1000000, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
+		photontracer.render(100, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
 
 		raytracer->LoadDistanceFieldDatas(df_datas);
 		raytracer->render(player->camera, vec3(-20), vec3(20));
