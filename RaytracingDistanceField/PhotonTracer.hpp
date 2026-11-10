@@ -21,6 +21,8 @@ public:
 
 
 	ShaderArrayBuffer<DF_Object> df_list;
+	vec3 refract_indices = vec3(1.5f, 1.4f, 1.3f);
+	float seed = -1.0f;
 
 	PhotonTracer(int gWidth,int gHeight) {
 		photontrace = ShaderProgram({
@@ -64,7 +66,10 @@ public:
 		photontrace.setVec3("lightPos", lightPos);
 		photontrace.setVec3("groundMin", groundMin);
 		photontrace.setVec3("groundMax", groundMax);
-		photontrace.setFloat("frame_seed",glfwGetTime());
+		photontrace.setFloat("frame_seed", seed >= 0.0f ? seed : glfwGetTime());
+		photontrace.setFloat("Rindex", refract_indices.x);
+		photontrace.setFloat("Gindex", refract_indices.y);
+		photontrace.setFloat("Bindex", refract_indices.z);
 
 		GLuint groups = (photon_count + 63) / 64;
 		GLuint gx = std::min<GLuint>(groups, 65535);

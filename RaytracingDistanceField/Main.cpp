@@ -26,6 +26,7 @@
 #include "DFMesh.hpp"
 #include "PhotonTracer.hpp"
 #include "PolygonSplatting.hpp"
+#include "BatchRenderer.hpp"
 
 
 shared_ptr<Player> player;
@@ -42,7 +43,8 @@ void window_resize(GLFWwindow* window, int width, int height) {
 	raytracer->update_window(width, height);
 }
 BYTE tmp[128 * 128 * 128];
-signed main() {
+signed main(int argc, char** argv) {
+	if (argc > 2 && std::string(argv[1]) == "--batch") return runBatch(argv[2]);
 	player = make_shared<Player>();
 #pragma region WindowInitialization
 	GLFWwindow* window;

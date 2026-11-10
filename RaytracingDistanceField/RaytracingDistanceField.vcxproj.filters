@@ -188,6 +188,12 @@
     <ClInclude Include="PolygonSplatting.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="BatchRenderer.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PngWriter.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="defaultShade.frag">

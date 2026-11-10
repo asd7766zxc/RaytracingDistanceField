@@ -175,6 +175,8 @@
     <ClInclude Include="PhotonTracer.hpp" />
     <ClInclude Include="Player.hpp" />
     <ClInclude Include="PolygonSplatting.hpp" />
+    <ClInclude Include="BatchRenderer.hpp" />
+    <ClInclude Include="PngWriter.hpp" />
     <ClInclude Include="ray.hpp" />
     <ClInclude Include="DF_SliceRenderer.hpp" />
     <ClInclude Include="RayTracer.hpp" />

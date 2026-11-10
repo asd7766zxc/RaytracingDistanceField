@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+RaytracingDistanceField/batch_out/
+tools/.venv/
+tools/__pycache__/
