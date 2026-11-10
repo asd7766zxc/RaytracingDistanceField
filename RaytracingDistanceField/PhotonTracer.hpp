@@ -2,6 +2,7 @@
 #include "ShaderProgram.hpp"
 #include "BufferBuilder.hpp"
 #include <GLFW/glfw3.h>
+#include <algorithm>
 
 class PhotonTracer {
 public:
@@ -65,7 +66,10 @@ public:
 		photontrace.setVec3("groundMax", groundMax);
 		photontrace.setFloat("frame_seed",glfwGetTime());
 
-		glDispatchCompute((photon_count + 63) / 64, 1, 1);
+		GLuint groups = (photon_count + 63) / 64;
+		GLuint gx = std::min<GLuint>(groups, 65535);
+		GLuint gy = (groups + gx - 1) / gx;
+		glDispatchCompute(gx, gy, 1);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		caustic_map_r.BindLocation(0);

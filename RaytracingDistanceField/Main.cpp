@@ -25,9 +25,11 @@
 #include "RayTracer.hpp"
 #include "DFMesh.hpp"
 #include "PhotonTracer.hpp"
+#include "PolygonSplatting.hpp"
 
 
 shared_ptr<Player> player;
+bool use_splat = false;
 int window_width = 800, window_height = 800;
 shared_ptr<RayTracer> raytracer;
 void window_resize(GLFWwindow* window, int width, int height) {
@@ -63,6 +65,10 @@ signed main() {
 
 	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
 		player->key_callback(window, key, scancode, action, mods);
+		if (key == GLFW_KEY_C && action == GLFW_PRESS) {
+			use_splat = !use_splat;
+			std::cout << "caustics: " << (use_splat ? "polygon splatting" : "photon tracing") << '\n';
+		}
 	});
 	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
 		player->cursor_pos_callback(window, xpos, ypos);
@@ -122,6 +128,8 @@ signed main() {
 	Voxelizer voxelizer;
 
 	PhotonTracer photontracer(2048, 2048);
+	PolygonSplatting polysplat(2048, 2048);
+	const int splat_grid_size = 512; // vertices per side -> 511^2 cells
 
 	DefaultRenderer renderer;
 	raytracer = make_shared<RayTracer>();
@@ -130,6 +138,8 @@ signed main() {
 	//player->yx = -0.0299994592;
 	//player->position = vec3(-0.512054026, 3.84784102, 5.60283041);
 	player->position = vec3(0, 0, 5);
+	player->loadCamera("camera.txt"); // restore the camera saved with Q, if any
+	player->updateView();
 	//aabb culling_box = aabb(vec3(2.8, 2, -.5), vec3(3.5, 2.6, .5));
 	aabb culling_box = aabb(vec3(-1),vec3(1));
 	float delta_stamp = 0.0f;
@@ -145,7 +155,7 @@ signed main() {
 	auto box = DFMesh(df_generator, MeshBuilder::Sphere(10), mat4::identity(), 0.5, 10);
 	vector<GameObject> objs;
 	GameObject obj,obj1,obj3;
-	obj.df_mesh = make_shared<DFMesh>(dfmesh_rabbit);
+	obj.df_mesh = make_shared<DFMesh>(dfmesh);
 	obj.position = vec3(-1, 1.5, 1.6);
 	obj.type.x = 3;
 
@@ -171,7 +181,6 @@ signed main() {
 		vector<DF_Object> df_datas;
 	for (auto c : objs) df_datas.push_back(c.getDFOjbect());
 	photontracer.LoadDistanceFieldDatas(df_datas);
-	raytracer->LoadDistanceFieldDatas(df_datas);
 	while (!glfwWindowShouldClose(window)) {
 		glViewport(0, 0, window_width, window_height);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -181,11 +190,19 @@ signed main() {
 		delta_stamp = glfwGetTime();
 
 		player->updateCameraPos(window, delta);
-		//obj.orientation = obj.orientation.rotate(vec3(0.1, 0, 0));
+		obj.orientation = obj.orientation.rotate(vec3(0, 0.1, 0));
+		df_datas[0].model = obj.getModelMatrix();
 
-		photontracer.LoadDistanceFieldDatas(df_datas);
-		photontracer.render(1000000, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
+		if (use_splat) {
+			polysplat.LoadDistanceFieldDatas(df_datas);
+			polysplat.render(splat_grid_size, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
+		} else {
+			photontracer.LoadDistanceFieldDatas(df_datas);
+			photontracer.render(160000, vec3(50000), vec3(0, 1, 0), vec3(-20), vec3(20));
+		}
 
+		raytracer->LoadDistanceFieldDatas(df_datas);
+		raytracer->use_splat = use_splat;
 		raytracer->render(player->camera, vec3(-20), vec3(20));
 		//auto end = std::chrono::steady_clock::now();
 		//auto duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);

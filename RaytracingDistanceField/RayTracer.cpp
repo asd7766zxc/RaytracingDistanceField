@@ -6,6 +6,7 @@ void RayTracer::setupScence() {
 void RayTracer::render(shared_ptr<Camera> camera, vec3 groundMin, vec3 groundMax) {
 	vec3 coord = camera->getPixel00Pos();
 	df_list.BindLocation(2);
+	const ShaderProgram& program = use_splat ? splat_program : this->program;
 	program.use();
 	program.setInt("objects_count", objects_count);
 	program.setVec3("eye_coord", camera->position);

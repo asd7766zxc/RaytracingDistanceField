@@ -11,8 +11,10 @@
 
 class RayTracer {
 public:
-	ShaderProgram program;
+	ShaderProgram program;        
+	ShaderProgram splat_program;  
 	ShaderProgram display_program;
+	bool use_splat = false;
 	
 	ShaderArrayBuffer<DF_Object> df_list;
 
@@ -23,7 +25,10 @@ public:
 		program = ShaderProgram({
 			Shader("raytrace.comp", GL_COMPUTE_SHADER)
 		});
-		
+		splat_program = ShaderProgram({
+			Shader("raytrace_splat.comp", GL_COMPUTE_SHADER)
+		});
+
 		display_program = ShaderProgram({
 			Shader("raytrace_display.vert", GL_VERTEX_SHADER),
 			Shader("raytrace_display.frag", GL_FRAGMENT_SHADER)

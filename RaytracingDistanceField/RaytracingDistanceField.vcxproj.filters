@@ -185,6 +185,9 @@
     <ClInclude Include="PhotonTracer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="PolygonSplatting.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="defaultShade.frag">
@@ -209,6 +212,9 @@
       <Filter>Shaders\DistanceField</Filter>
     </None>
     <None Include="raytrace.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="raytrace_splat.comp">
       <Filter>Shaders</Filter>
     </None>
     <None Include="raytrace_display.frag">
@@ -236,6 +242,15 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="temporal_accumulation.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="polygonsplat.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="rasterize_splat.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="rasterize_splat.vert">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

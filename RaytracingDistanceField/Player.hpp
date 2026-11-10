@@ -3,6 +3,8 @@
 #include "Vec.hpp"
 #include "Camera.hpp"
 #include <GLFW/glfw3.h>
+#include <fstream>
+#include <sstream>
 
 class Player {
 public:
@@ -51,9 +53,42 @@ public:
 			glfwSetInputMode(window, GLFW_CURSOR, camera_control ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 		}
 		
+		if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
+			saveCamera("camera.txt");
+			glfwSetWindowShouldClose(window, GLFW_TRUE); 
+		}
+
 		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
 			exit(0);
 		}
+	}
+
+	void saveCamera(const char* path) {
+		std::ostringstream ss;
+		ss.precision(9);
+		ss << "player->rx = " << rx << ";\n"
+		   << "player->yx = " << yx << ";\n"
+		   << "player->rz = " << rz << ";\n"
+		   << "player->position = vec3(" << position.x << ", " << position.y << ", " << position.z << ");\n";
+		std::ofstream out(path);
+		out << ss.str();
+		//std::cout << "camera saved to " << path << ":\n" << ss.str();
+	}
+	
+	bool loadCamera(const char* path) {
+		std::ifstream in(path);
+		if (!in) return false;
+		std::string line;
+		float x, y, z;
+		while (std::getline(in, line)) {
+			if (sscanf_s(line.c_str(), "player->rx = %f", &x) == 1) rx = x;
+			else if (sscanf_s(line.c_str(), "player->yx = %f", &x) == 1) yx = x;
+			else if (sscanf_s(line.c_str(), "player->rz = %f", &x) == 1) rz = x;
+			else if (sscanf_s(line.c_str(), "player->position = vec3(%f, %f, %f)", &x, &y, &z) == 3) position = vec3(x, y, z);
+		}
+		updateView();
+		std::cout << "camera loaded from " << path << '\n';
+		return true;
 	}
 	void cursor_pos_callback(GLFWwindow* window, double xpos, double ypos) {
 		static double last_x = xpos, last_y = ypos;

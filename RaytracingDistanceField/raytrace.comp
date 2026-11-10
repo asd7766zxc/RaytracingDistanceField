@@ -26,6 +26,8 @@ layout (rgba32f, binding = 0) uniform image2D imgOutput;
 layout (r32ui, binding = 3) uniform uimage2D caustic_map_r;
 layout (r32ui, binding = 4) uniform uimage2D caustic_map_g;
 layout (r32ui, binding = 5) uniform uimage2D caustic_map_b;
+layout (r32ui, binding = 6) uniform uimage2D caustic_map_poly;
+
 
 
 struct df_object{
