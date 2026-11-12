@@ -32,6 +32,10 @@ public:
 		guassian_blur = ShaderProgram({
 			Shader("guassian_blur.comp", GL_COMPUTE_SHADER)
 		});
+
+		/* guassian_blur = ShaderProgram({
+			Shader("no_splatting.comp", GL_COMPUTE_SHADER)
+			}); */
 		temporal_accumulation = ShaderProgram({
 			Shader("temporal_accumulation.comp", GL_COMPUTE_SHADER)
 		});
@@ -48,7 +52,10 @@ public:
 		objects_count = objs.size();
 		df_list.BufferData(objs);
 	}
+	
 	void render(int photon_count,vec3 intensity,vec3 lightPos,vec3 groundMin,vec3 groundMax) {
+		static int frame_index = 0;
+		++frame_index;
 		caustic_map_r.BindLocation(3);
 		caustic_map_g.BindLocation(4);
 		caustic_map_b.BindLocation(5);
@@ -65,7 +72,8 @@ public:
 		photontrace.setVec3("groundMin", groundMin);
 		photontrace.setVec3("groundMax", groundMax);
 		photontrace.setFloat("frame_seed",glfwGetTime());
-
+		float k = 1.0f - 1.0f / frame_index;
+		photontrace.setFloat("accu_coeff", 1.0f - k);
 		GLuint groups = (photon_count + 63) / 64;
 		GLuint gx = std::min<GLuint>(groups, 65535);
 		GLuint gy = (groups + gx - 1) / gx;
@@ -86,6 +94,7 @@ public:
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 		temporal_accumulation.use();
+		temporal_accumulation.setFloat("k", k);
 		glDispatchCompute((caustic_map_r.sx + 15) / 16, (caustic_map_r.sy + 15) / 16, 1);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}

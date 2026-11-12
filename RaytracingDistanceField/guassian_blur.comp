@@ -14,24 +14,29 @@ void main() {
     if (p.x >= imageSize(img_inR).x || p.y >= imageSize(img_inR).y) return;
     float sum = 0.0;
     float kk = 0.7;
+    float sum_w = 0.0;
     for (int dy = -4; dy <= 4; ++dy)
         for (int dx = -4; dx <= 4; ++dx) {
             float w = exp(-float(dx*dx + dy*dy) * kk);
             sum += float(imageLoad(img_inR, p + ivec2(dx,dy)).r) * w;
+            sum_w += w;
         }
-    imageAtomicAdd(img_outR, p, uint(sum));
+    // imageStore(img_outR, p, uvec4(sum / sum_w));
+    imageAtomicAdd(img_outR, p, uint(sum / sum_w));
     sum = 0.0f;
     for (int dy = -4; dy <= 4; ++dy)
         for (int dx = -4; dx <= 4; ++dx) {
             float w = exp(-float(dx*dx + dy*dy) * kk);
             sum += float(imageLoad(img_inG, p + ivec2(dx,dy)).r) * w;
         }
-    imageAtomicAdd(img_outG, p, uint(sum));
+    //imageStore(img_outG, p, uvec4(sum / sum_w));
+    imageAtomicAdd(img_outG, p, uint(sum / sum_w));
     sum = 0.0f;
     for (int dy = -4; dy <= 4; ++dy)
         for (int dx = -4; dx <= 4; ++dx) {
             float w = exp(-float(dx*dx + dy*dy) * kk);
             sum += float(imageLoad(img_inB, p + ivec2(dx,dy)).r) * w;
         }
-    imageAtomicAdd(img_outB, p, uint(sum));
+    //imageStore(img_outB, p, uvec4(sum / sum_w));
+    imageAtomicAdd(img_outB, p, uint(sum / sum_w));
 }

@@ -71,6 +71,6 @@ void main(){
 
 	float omega = solidAngle(normalize(v0.path.xyz), normalize(v1.path.xyz), normalize(v2.path.xyz));
 	float w = (v0.pos.w + v1.pos.w + v2.pos.w) / 3.0;
-	float energy = intensity / (4.0 * PI) * omega * w;
+	float energy = intensity * abs(omega) * w;
 	density = energy / max(area, min_area_px);
 }

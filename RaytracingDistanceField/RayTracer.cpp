@@ -15,6 +15,8 @@ void RayTracer::render(shared_ptr<Camera> camera, vec3 groundMin, vec3 groundMax
 	program.setVec3("dv", camera->dv);
 	program.setVec3("groundMin", groundMin);
 	program.setVec3("groundMax", groundMax);
+	program.setInt("window_w", window_width);
+	program.setInt("window_h", window_height);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture);

@@ -196,6 +196,7 @@
     <None Include="df_visualize.frag" />
     <None Include="df_visualize.vert" />
     <None Include="noShade.frag" />
+    <None Include="no_splatting.comp" />
     <None Include="photontrace.comp" />
     <None Include="polygonsplat.comp" />
     <None Include="rasterize_splat.frag" />

@@ -11,7 +11,8 @@ struct ray {
 vec3 ray_at(ray r,float t){
 	return t * r.dir + r.ori;
 }
-
+uniform int window_w;
+uniform int window_h;
 uniform vec3 pixel00Coord;
 uniform vec3 du;
 uniform vec3 dv;
@@ -149,7 +150,7 @@ vec3 raycolor_list[bounce_count];
 
 void main(){
 	vec3 pixelRawCoord = vec3(gl_GlobalInvocationID.xy, 0);
-	if(pixelRawCoord.x >= 800 || pixelRawCoord.y >= 800) return;
+	if(pixelRawCoord.x >= window_w || pixelRawCoord.y >= window_h) return;
 	vec3 pixelCoord = pixelRawCoord.x * du + pixelRawCoord.y * dv + pixel00Coord;
 
 	vec3 light_pos = vec3(0,1,0);

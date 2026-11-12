@@ -11,7 +11,7 @@ public:
 	GLuint caustic_map = 0;
 	int map_w = 0, map_h = 0;
 	// R / G / B
-	vec3 refract_indices = vec3(1.50f, 1.40f, 1.30f);
+	vec3 refract_indices = vec3(1.30f, 1.40f, 1.50f);
 	ShaderArrayBuffer<DF_Object> df_list;
 	struct splat_vertex {
 		vec4 pos;
@@ -19,7 +19,7 @@ public:
 	};
 	ShaderArrayBuffer<splat_vertex> splatted_list;
 
-	float energy_scale = 1350000.0f;
+	float energy_scale = 100000.0f;
 	float min_area_px = 0.05f;
 	float max_area_ratio = 0.05f;          
 
