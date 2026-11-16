@@ -1,0 +1,120 @@
+#version 430 core
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in; //invocation per triangle 
+layout(std430, binding = 0) readonly buffer vertexBuffer {
+	float position[];
+};
+uniform	vec3 box_max;
+layout(binding = 1, r32ui) uniform uimage3D voxel_image;
+
+void main(){
+	int id = int(gl_GlobalInvocationID.x); // triangle indices
+	vec3 v0 = vec3(position[id * 9 + 0],position[id * 9 + 1],position[id * 9 + 2]);
+	vec3 v1 = vec3(position[id * 9 + 3],position[id * 9 + 4],position[id * 9 + 5]);
+	vec3 v2 = vec3(position[id * 9 + 6],position[id * 9 + 7],position[id * 9 + 8]);
+
+	vec3 b_min = box_max;
+	vec3 b_max = vec3(0,0,0);
+
+	b_min = min(b_min,v0);
+	b_min = min(b_min,v1);
+	b_min = min(b_min,v2);
+
+	b_max = max(b_max,v0);
+	b_max = max(b_max,v1);
+	b_max = max(b_max,v2);
+
+	b_max = min(b_max,box_max);
+	b_min = max(b_min,vec3(0,0,0));
+
+	b_min = floor(b_min);
+	b_max = ceil(b_max);
+	b_max = min(b_max,box_max);
+
+	ivec3 imin = ivec3(b_min.xyz);
+	ivec3 imax = ivec3(b_max.xyz);
+
+	vec3 v[3];
+	v[0] = v0, v[1] = v1, v[2] = v2;
+	vec3 n = normalize(cross((v[1] - v[0]),(v[2] - v[0])));
+	vec3 c1,c2;
+	c1.x = n.x > 0 ? 1 : 0;
+	c1.y = n.y > 0 ? 1 : 0;
+	c1.z = n.z > 0 ? 1 : 0;
+	c2 = vec3(1) - c1;
+
+
+	float d1 = dot(n,c1 - v0);
+	float d2 = dot(n,c2 - v0);
+
+	vec3 mx[3],my[3],mz[3];// mx : edge normal on yz-plane
+	vec3 fx[3],fy[3],fz[3];// fx : voxel corner on yz-plane
+
+	// suppose every projections of the triangle are oriented counterclockwise
+	for(int i = 0; i < 3; ++i){
+		// x = x, y = y //xy
+		mz[i] = vec3(v[(i + 1) % 3].y - v[i].y,v[i].x - v[(i + 1) % 3].x,0);
+		
+		// x = z, y = x //zx
+		my[i] = vec3(v[(i + 1) % 3].x - v[i].x,v[i].z - v[(i + 1) % 3].z,0);
+
+		// x = y, y = z //yz
+		mx[i] = vec3(v[(i + 1) % 3].z - v[i].z,v[i].y - v[(i + 1) % 3].y,0);
+	}
+
+	if(n.z > 0){
+		for(int i = 0; i < 3;++i) mz[i] = -mz[i];
+	}
+
+	if(n.y > 0){
+		for(int i = 0; i < 3;++i) my[i] = -my[i];
+	}
+
+	if(n.x > 0){
+		for(int i = 0; i < 3;++i) mx[i] = -mx[i];
+	}
+
+	float gx[3],gy[3],gz[3];
+	for(int i = 0; i < 3; ++i){
+		fx[i].x = mx[i].x > 0 ? 1 : 0;
+		fx[i].y = mx[i].y > 0 ? 1 : 0;	
+
+		fy[i].x = my[i].x > 0 ? 1 : 0;
+		fy[i].y = my[i].y > 0 ? 1 : 0;	
+		
+		fz[i].x = mz[i].x > 0 ? 1 : 0;
+		fz[i].y = mz[i].y > 0 ? 1 : 0;	
+
+		gx[i] = dot(mx[i],fx[i] - vec3(v[i].yz,0));
+		gy[i] = dot(my[i],fy[i] - vec3(v[i].zx,0));
+		gz[i] = dot(mz[i],fz[i] - vec3(v[i].xy,0));
+	}
+
+
+	for(int x = imin.x; x < imax.x; ++x){
+		for(int y = imin.y; y < imax.y; ++y){
+			for(int z = imin.z; z < imax.z; ++z){
+				vec3 X = vec3(x,y,z);
+				int zchunk = z / 32;
+				int zindex = z % 32;
+				float nTX = dot(n,X);
+				bool planeIntersected = (nTX + d1 >= 0 && nTX + d2 <= 0) || (nTX + d1 <= 0 && nTX + d2 >= 0);
+				bool triangleIntersected = true;
+
+				vec3 bxy = vec3(x,y,0);
+				vec3 byz = vec3(y,z,0);
+				vec3 bzx = vec3(z,x,0);
+
+				 triangleIntersected = triangleIntersected && (dot(mz[0],bxy) + gz[0] >= 0 && dot(mz[1],bxy) + gz[1] >= 0 && dot(mz[2],bxy) + gz[2] >= 0);
+				 triangleIntersected = triangleIntersected && (dot(mx[0],byz) + gx[0] >= 0 && dot(mx[1],byz) + gx[1] >= 0 && dot(mx[2],byz) + gx[2] >= 0);
+				 triangleIntersected = triangleIntersected && (dot(my[0],bzx) + gy[0] >= 0 && dot(my[1],bzx) + gy[1] >= 0 && dot(my[2],bzx) + gy[2] >= 0);
+
+
+				if(triangleIntersected && planeIntersected){
+					imageAtomicOr(voxel_image, ivec3(x,y,zchunk),1u << (zindex));
+				}
+
+			}
+		}
+	}
+}
+
