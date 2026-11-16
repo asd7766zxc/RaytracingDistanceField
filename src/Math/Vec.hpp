@@ -366,10 +366,6 @@ public:
 		return ret;
 	}
 
-	//Get the column major array for OpenGL
-	inline float* gl_mat() const {
-		return this->transposed().mt;
-	}
 
 	//Inverse
 	matrix4 inverse() const {
@@ -492,8 +488,6 @@ public:
 		return ret;
 	}
 
-	// 如果要找一個變換 T 的三個軸，先取 T.inverse 再取軸 (T 是 world 打到 local)
-	// local 打到 world 就直接取軸
 
 	inline vec3 x_axis() const {
 		return vec3(mt[0], mt[4], mt[8]);
@@ -532,7 +526,6 @@ public:
 	}
 
 	//https://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
-	//旋轉分解
 	vec3 toEulerAngles() const {
 		vec3 ret;
 		auto& [psi, theta, phi] = ret;
@@ -578,9 +571,3 @@ inline std::ostream& operator<<(std::ostream& out, const mat4& m) {
 	out << m.mt[12] << ", " << m.mt[13] << ", " << m.mt[14] << ", " << m.mt[15] << "\n";
 	return out;
 }
-
-#ifndef TP(p)
-#define TP(p) (p).x,(p).y,(p).z
-#endif // !TP(p)
-
-

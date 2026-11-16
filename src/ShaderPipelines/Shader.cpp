@@ -1,4 +1,7 @@
 #include "ShaderPipelines/Shader.hpp"
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 
 Shader::Shader(const char* source, GLuint shader_type) {
@@ -58,4 +61,4 @@ void Shader::checkCompileErrors() {
 		glGetShaderInfoLog(ID, 512, NULL, infoLog);
 		std::cout << "Shader Compilation Error" << infoLog << std::endl;
 	}
-}
+}
