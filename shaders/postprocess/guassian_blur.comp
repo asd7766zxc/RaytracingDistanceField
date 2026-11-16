@@ -8,6 +8,11 @@ layout(r32ui, binding = 3) uniform uimage2D img_outR;
 layout(r32ui, binding = 4) uniform uimage2D img_outG;
 layout(r32ui, binding = 5) uniform uimage2D img_outB;
 
+uniform float k = 0.0;
+
+uint blend(uint history, float current) {
+    return uint(float(history) * k + current * (1.0 - k) + 0.5);
+}
 
 void main() {
     ivec2 p = ivec2(gl_GlobalInvocationID.xy);
@@ -21,22 +26,19 @@ void main() {
             sum += float(imageLoad(img_inR, p + ivec2(dx,dy)).r) * w;
             sum_w += w;
         }
-    // imageStore(img_outR, p, uvec4(sum / sum_w));
-    imageAtomicAdd(img_outR, p, uint(sum / sum_w));
+    imageStore(img_outR, p, uvec4(blend(imageLoad(img_outR, p).r, sum / sum_w)));
     sum = 0.0f;
     for (int dy = -4; dy <= 4; ++dy)
         for (int dx = -4; dx <= 4; ++dx) {
             float w = exp(-float(dx*dx + dy*dy) * kk);
             sum += float(imageLoad(img_inG, p + ivec2(dx,dy)).r) * w;
         }
-    //imageStore(img_outG, p, uvec4(sum / sum_w));
-    imageAtomicAdd(img_outG, p, uint(sum / sum_w));
+    imageStore(img_outG, p, uvec4(blend(imageLoad(img_outG, p).r, sum / sum_w)));
     sum = 0.0f;
     for (int dy = -4; dy <= 4; ++dy)
         for (int dx = -4; dx <= 4; ++dx) {
             float w = exp(-float(dx*dx + dy*dy) * kk);
             sum += float(imageLoad(img_inB, p + ivec2(dx,dy)).r) * w;
         }
-    //imageStore(img_outB, p, uvec4(sum / sum_w));
-    imageAtomicAdd(img_outB, p, uint(sum / sum_w));
+    imageStore(img_outB, p, uvec4(blend(imageLoad(img_outB, p).r, sum / sum_w)));
 }

@@ -1,6 +1,7 @@
 #pragma once
 #include "Helpers/Helpers.hpp"
 #include <glad/glad.h>
+#include <cstring>
 //Explicit decide the buffer type for convience to map back to CPU
 // vec3 will pad to 16 bytes. 
 

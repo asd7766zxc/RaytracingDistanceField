@@ -58,7 +58,7 @@ public:
 	Visualization visualizer;
 
 	void setupScence();
-	void render(shared_ptr<Camera> camera, vec3 groundMin, vec3 groundMax);
+	void render(shared_ptr<Camera> camera,vec3 intensity,vec3 lightPos, vec3 groundMin, vec3 groundMax);
 
 	unsigned int quadVAO = 0;
 	unsigned int quadVBO = 0;

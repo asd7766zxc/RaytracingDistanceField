@@ -2,6 +2,7 @@
 #include "ShaderPipelines/BufferBuilder.hpp"
 #include "Math/aabb.hpp"
 #include "Math/MathUtilities.hpp"
+#include <algorithm>
 
 //will hold a constant limit range (upperbound is restricted by OpenGL)
 

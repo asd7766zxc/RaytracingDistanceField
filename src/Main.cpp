@@ -29,7 +29,7 @@
 
 
 shared_ptr<Player> player;
-bool use_splat = false;
+bool use_splat = true;
 bool start_render = false;
 int window_width = 800, window_height = 800;
 shared_ptr<RayTracer> raytracer;
@@ -150,18 +150,24 @@ signed main() {
 	
 	shared_ptr<ModelLoader> teapot_nolid_raw = make_shared<ModelLoader>(ASSET_DIR "utah_teapot_nolid.obj");
 	shared_ptr<ModelLoader> rabbit_raw = make_shared<ModelLoader>(ASSET_DIR "bunny.obj");
+	shared_ptr<ModelLoader> wineglass_raw = make_shared<ModelLoader>(ASSET_DIR "another_wine.obj");
+	
 	shared_ptr<Mesh> teapot_nolid = make_shared<Mesh>(teapot_nolid_raw->vertices, teapot_nolid_raw->vertex_size * 8 * 4, teapot_nolid_raw->vertex_size);
 	shared_ptr<Mesh> rabbit = make_shared<Mesh>(rabbit_raw->vertices, rabbit_raw->vertex_size * 8 * 4, rabbit_raw->vertex_size);
+	shared_ptr<Mesh> wineglass = make_shared<Mesh>(wineglass_raw->vertices, wineglass_raw->vertex_size * 8 * 4, wineglass_raw->vertex_size);
 
 	DistanceFieldGenerator df_generator;
-	//auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
+	// auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
 	//auto dfmesh_rabbit = DFMesh(df_generator, rabbit, mat4::identity(), 0.25, 128);
+	auto dfmesh_wineglass = DFMesh(df_generator, wineglass, mat4::identity(), 4, 128 * 3);
 	auto box = DFMesh(df_generator, MeshBuilder::Sphere(10), mat4::identity(), 0.5, 10);
 	vector<GameObject> objs;
 	GameObject obj,obj1,obj3;
-	obj.df_mesh = make_shared<DFMesh>(box);
-	obj.position = vec3(1, 0.8, 1.6);
-	obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
+	obj.df_mesh = make_shared<DFMesh>(dfmesh_wineglass);
+	obj.position = vec3(1, 0.8, 1.6); // prism
+	obj.position = vec3(0, 1.0, 1.6); // teapot
+	obj.position = vec3(0, 1.0, 1.6); // glass wine
+	// obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
 	obj.type.x = 3;
 
 	{
@@ -184,7 +190,7 @@ signed main() {
 		prism->df_data = DistanceFieldData(padded, 128);
 		df_generator.generateDistanceField(prism->df_data, make_shared<Mesh>(*prism));
 
-		obj.df_mesh = prism;
+		// obj.df_mesh = prism;
 	}
 
 	//obj3.type.x = 3;
@@ -209,6 +215,12 @@ signed main() {
 	photontracer.LoadDistanceFieldDatas(df_datas);
 	int total_time = 0;
 	int frame_index = 0;
+
+	obj.orientation = obj.orientation.rotate(vec3(0, 2, 0));
+
+	vec3 initial_light_pos = vec3(-2, 1.1, 1.6); // prism
+	initial_light_pos = vec3(-2,4,1.6);
+
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {
 			glfwPollEvents();
@@ -222,6 +234,8 @@ signed main() {
 		float delta = glfwGetTime() - delta_stamp;
 		delta_stamp = glfwGetTime();
 
+		vec3 light_pos = initial_light_pos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
+
 		player->updateCameraPos(window, delta);
 		// obj.orientation = obj.orientation.rotate(vec3(0, 0.01, 0));
 		df_datas[0] = obj.getDFOjbect(); 
@@ -229,15 +243,15 @@ signed main() {
 		auto start = std::chrono::steady_clock::now();
 		if (use_splat) {
 			polysplat.LoadDistanceFieldDatas(df_datas);
-			polysplat.render(splat_grid_size, vec3(50000), vec3(-2, 1.1, 1.6), vec3(-20), vec3(20));
+			polysplat.render(splat_grid_size, vec3(50000), light_pos, vec3(-20), vec3(20));
 		} else {
 			photontracer.LoadDistanceFieldDatas(df_datas);
-			photontracer.render(10, vec3(50000 * 1.2), vec3(-2, 1.1, 1.6), vec3(-20), vec3(20));
+			photontracer.render(16000000, vec3(50000 * 1.2), light_pos, vec3(-20), vec3(20));
 		}
 
 		raytracer->LoadDistanceFieldDatas(df_datas);
 		raytracer->use_splat = use_splat;
-		raytracer->render(player->camera, vec3(-20), vec3(20));
+		raytracer->render(player->camera,vec3(50000 * 1.2), light_pos, vec3(-20), vec3(20));
 		auto end = std::chrono::steady_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		total_time += duration.count();

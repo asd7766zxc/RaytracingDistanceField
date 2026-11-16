@@ -72,10 +72,9 @@ public:
 		photontrace.setVec3("groundMin", groundMin);
 		photontrace.setVec3("groundMax", groundMax);
 		photontrace.setFloat("frame_seed",glfwGetTime());
-		float k = 1.0f - 1.0f / frame_index;
-		photontrace.setFloat("accu_coeff", 1.0f - k);
-		GLuint groups = (photon_count + 63) / 64;
-		GLuint gx = std::min<GLuint>(groups, 65535);
+		float k = 1.0f - 1.0f / (float)frame_index;
+		int groups = (photon_count + 63) / 64;
+		int gx = std::min(groups, 65535);
 		GLuint gy = (groups + gx - 1) / gx;
 		glDispatchCompute(gx, gy, 1);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -89,12 +88,7 @@ public:
 		caustic_map_b_blurred.BindLocation(5);
 
 		guassian_blur.use();
-
-		glDispatchCompute((caustic_map_r.sx + 15) / 16, (caustic_map_r.sy + 15) / 16, 1);
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
-		temporal_accumulation.use();
-		temporal_accumulation.setFloat("k", k);
+		guassian_blur.setFloat("k", k);
 		glDispatchCompute((caustic_map_r.sx + 15) / 16, (caustic_map_r.sy + 15) / 16, 1);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	}

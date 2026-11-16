@@ -3,7 +3,7 @@
 
 void RayTracer::setupScence() {
 }
-void RayTracer::render(shared_ptr<Camera> camera, vec3 groundMin, vec3 groundMax) {
+void RayTracer::render(shared_ptr<Camera> camera,vec3 intensity,vec3 lightPos, vec3 groundMin, vec3 groundMax) {
 	vec3 coord = camera->getPixel00Pos();
 	df_list.BindLocation(2);
 	const ShaderProgram& program = use_splat ? splat_program : this->program;
@@ -15,6 +15,10 @@ void RayTracer::render(shared_ptr<Camera> camera, vec3 groundMin, vec3 groundMax
 	program.setVec3("dv", camera->dv);
 	program.setVec3("groundMin", groundMin);
 	program.setVec3("groundMax", groundMax);
+
+	program.setVec3("intensity", intensity);
+	program.setVec3("lightPos", lightPos);
+
 	program.setInt("window_w", window_width);
 	program.setInt("window_h", window_height);
 
