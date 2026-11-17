@@ -11,13 +11,15 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 uniform int photon_count;
 
 const vec2 SPREAD = vec2(0.5, 0.02);
+const vec2 SURFACE_RECT = vec2(2.0,2.0);
 
 float photon_flux;
 
 bool onHit(inout RayState s, Hit h) {
 	if (h.material == MAT_GROUND) {
 		vec2 uv;
-		if (groundUV(h.p, uv))
+		// s.refracted = true;
+		if (s.refracted && groundUV(h.p, uv))
 			splat(s.wave_length, uv, clamp(s.radiance * photon_flux * 1e5, 0.0, 1e7));
 		return false;
 	}
@@ -28,6 +30,7 @@ bool onHit(inout RayState s, Hit h) {
 	}
 	if (h.material == MAT_DIELECTRIC) {
 		refractRay(s, h, wavelengthIOR(s.wave_length));
+		// refractRay(s, h, 1.5);
 		return true;
 	}
 	return false;
@@ -36,7 +39,7 @@ bool onHit(inout RayState s, Hit h) {
 void onMiss(inout RayState s) {}
 
 
-bool point_mode = false;
+bool point_mode = true;
 
 void main() {
 	int indx = int(gl_GlobalInvocationID.y * (gl_NumWorkGroups.x * gl_WorkGroupSize.x) + gl_GlobalInvocationID.x);
@@ -45,8 +48,17 @@ void main() {
 
 	float wave_length = sampleWavelength();
 	vec3 dir = point_mode ? randomUnitVector() : sampleTile(lightPos, aimPoint(), SPREAD);
+
+	dir = normalize(aimPoint() - lightPos);
+	
+
 	photon_flux = point_mode ? intensity.x * 4 * 3.1415926535 / float(photon_count) : intensity.x * (4.0 * SPREAD.x * SPREAD.y) / float(photon_count);
 
-	RayState s = genRay(lightSurface(dir), dir, wave_length);
+	photon_flux = 0.5 * intensity.x * SURFACE_RECT.x * SURFACE_RECT.y  / float(photon_count);
+	vec3 ro = lightSurface(dir);
+	ro = sampleSurface(lightPos, aimPoint(), SURFACE_RECT) + lightSurface(dir) + 0.05 * dir;
+	// ro = lightSurface(dir);
+
+	RayState s = genRay(ro, dir, wave_length);
 	tracePath(s);
 }

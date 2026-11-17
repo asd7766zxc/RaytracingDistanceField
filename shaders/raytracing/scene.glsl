@@ -2,7 +2,7 @@
 #define SCENE_GLSL
 
 #ifndef MARCH_STEPS
-#define MARCH_STEPS 50
+#define MARCH_STEPS 60
 #endif
 
 #define MAT_DIFFUSE    0
@@ -107,7 +107,7 @@ float march(vec3 ro, vec3 rd, out int id) {
 	float tg = rd.y < 0.0 ? -ro.y / rd.y : 1e9;
 	float t = 0.0, d = 1e4;
 	id = -1;
-	for (int s = 0; s < MARCH_STEPS && d > 1e-2 && t < tg; ++s) {
+	for (int s = 0; s < MARCH_STEPS && d > 1e-2; ++s) {
 		d = abs(sceneSDF(ro + rd * t, id));
 		t += d;
 	}

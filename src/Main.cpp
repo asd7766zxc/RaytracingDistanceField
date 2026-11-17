@@ -133,7 +133,7 @@ signed main() {
 
 	PhotonTracer photontracer(2048, 2048);
 	PolygonSplatting polysplat(2048, 2048);
-	const int splat_grid_size = 1024; // vertices per side -> 511^2 cells
+	const int splat_grid_size = 256; // vertices per side -> 511^2 cells
 
 	DefaultRenderer renderer;
 	raytracer = make_shared<RayTracer>();
@@ -151,23 +151,27 @@ signed main() {
 	shared_ptr<ModelLoader> teapot_nolid_raw = make_shared<ModelLoader>(ASSET_DIR "utah_teapot_nolid.obj");
 	shared_ptr<ModelLoader> rabbit_raw = make_shared<ModelLoader>(ASSET_DIR "bunny.obj");
 	shared_ptr<ModelLoader> wineglass_raw = make_shared<ModelLoader>(ASSET_DIR "another_wine.obj");
+	shared_ptr<ModelLoader> glasscup_raw = make_shared<ModelLoader>(ASSET_DIR "glasscup.obj");
 	
 	shared_ptr<Mesh> teapot_nolid = make_shared<Mesh>(teapot_nolid_raw->vertices, teapot_nolid_raw->vertex_size * 8 * 4, teapot_nolid_raw->vertex_size);
 	shared_ptr<Mesh> rabbit = make_shared<Mesh>(rabbit_raw->vertices, rabbit_raw->vertex_size * 8 * 4, rabbit_raw->vertex_size);
 	shared_ptr<Mesh> wineglass = make_shared<Mesh>(wineglass_raw->vertices, wineglass_raw->vertex_size * 8 * 4, wineglass_raw->vertex_size);
-
+	shared_ptr<Mesh> glasscup = make_shared<Mesh>(glasscup_raw->vertices, glasscup_raw->vertex_size * 8 * 4, glasscup_raw->vertex_size);
+		
 	DistanceFieldGenerator df_generator;
-	// auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
-	//auto dfmesh_rabbit = DFMesh(df_generator, rabbit, mat4::identity(), 0.25, 128);
+	auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
+	// auto dfmesh_rabbit = DFMesh(df_generator, rabbit, mat4::identity(), 0.25, 128);
 	// auto dfmesh_wineglass = DFMesh(df_generator, wineglass, mat4::identity(), 4, 128 * 3);
-	auto box = DFMesh(df_generator, MeshBuilder::Cube(), mat4::identity(), 0.5, 128);
+	// auto dfmesh_glasscup = DFMesh(df_generator, glasscup, mat4::identity(), 0.01, 128 * 3);
+	auto box = DFMesh(df_generator, MeshBuilder::Sphere(5), mat4::identity(), 0.5, 128);
 	vector<GameObject> objs;
 	GameObject obj,obj1,obj3;
 	obj.df_mesh = make_shared<DFMesh>(box);
 	obj.position = vec3(1, 0.8, 1.6); // prism
 	obj.position = vec3(1, 0.5, 1.6); // prism 2
 	// obj.position = vec3(0, 1.0, 1.6); // teapot
-	// obj.position = vec3(0, 1.0, 1.6); // glass wine
+	// obj.position = vec3(1, 1.0, 2.6); // glass wine
+	obj.position = vec3(1, 0.5, 1.6); // crystal
 	obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
 	obj.type.x = 3;
 
@@ -191,7 +195,7 @@ signed main() {
 		prism->df_data = DistanceFieldData(padded, 128);
 		df_generator.generateDistanceField(prism->df_data, make_shared<Mesh>(*prism));
 
-		obj.df_mesh = prism;
+		// obj.df_mesh = prism;
 	}
 
 	//obj3.type.x = 3;
@@ -221,7 +225,8 @@ signed main() {
 
 	vec3 initial_light_pos = vec3(-2, 1.1, 1.6); // prism
 	initial_light_pos = vec3(-2, 1.2, 1.6); // prism 2
-	// initial_light_pos = vec3(-2,4,1.6);
+	// initial_light_pos = vec3(-2, 2.2, 1.6); // box
+	// initial_light_pos = vec3(-2,2,1.6); // wine
 
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {

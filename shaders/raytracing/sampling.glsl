@@ -4,7 +4,7 @@
 #include "raytracing/rng.glsl"
 #include "raytracing/scene.glsl"
 
-const float IOR[3] = float[](1.2, 1.6, 1.4);
+const float IOR[3] = float[](1.3, 1.5, 1.4);
 const vec3 DEFAULT_AIM = vec3(-1, 1.5, 1.6);
 
 float sampleWavelength() {
@@ -21,12 +21,23 @@ vec3 aimPoint() {
 		: DEFAULT_AIM;
 }
 
+vec3 aimCenter(){
+	return (inverse(objects[0].worldToModel) * vec4(vec3(0), 1.0)).xyz;
+}
+
 vec3 sampleTile(vec3 from, vec3 aim, vec2 tile) {
 	vec3 w = normalize(aim - from);
 	vec3 u = normalize(cross(vec3(0, 0, 1), w));
 	vec3 v = cross(w, u);
 	return normalize(w + tile.x * (2.0 * randf() - 1.0) * u + tile.y * (2.0 * randf() - 1.0) * v);
 }
+vec3 sampleSurface(vec3 from, vec3 aim, vec2 tile){
+	vec3 w = normalize(aim - from);
+	vec3 u = normalize(cross(vec3(0, 0, 1), w));
+	vec3 v = cross(w, u);
+	return tile.x * (2.0 * randf() - 1.0) * u + tile.y * (2.0 * randf() - 1.0) * v;
+}
+
 
 vec3 octDecode(vec2 uv) {
 	vec2 p = uv * 2.0 - 1.0;
