@@ -19,7 +19,7 @@ vec3 eye_radiance;
 vec3 eye_color;
 bool eye_done;
 
-void finishEye(vec3 color) {
+void store_color(vec3 color) {
 	eye_color = color;
 	eye_done = true;
 }
@@ -41,15 +41,16 @@ bool onHit(inout RayState s, Hit h) {
 	}
 	if (h.material == MAT_GROUND) {
 		float diffuse = max(0.5 * dot(h.n, normalize(lightPos - h.p)), 0.0);
-		finishEye(eye_radiance * diffuse + readCausticMap(h.p));
+		// diffuse = 0.0f;
+		store_color(eye_radiance * diffuse + readCausticMap(h.p));
 		return false;
 	}
-	finishEye(eye_radiance);
+	store_color(eye_radiance);
 	return false;
 }
 
 void onMiss(inout RayState s) {
-	finishEye(vec3(0.5)); //ambient
+	store_color(vec3(0.5)); //ambient
 }
 
 void main() {

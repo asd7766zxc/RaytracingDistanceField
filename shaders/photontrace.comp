@@ -17,7 +17,7 @@ float photon_flux;
 bool onHit(inout RayState s, Hit h) {
 	if (h.material == MAT_GROUND) {
 		vec2 uv;
-		if (s.refracted && groundUV(h.p, uv))
+		if (groundUV(h.p, uv))
 			splat(s.wave_length, uv, clamp(s.radiance * photon_flux * 1e5, 0.0, 1e7));
 		return false;
 	}
@@ -36,7 +36,7 @@ bool onHit(inout RayState s, Hit h) {
 void onMiss(inout RayState s) {}
 
 
-bool tile_mode = false;
+bool point_mode = false;
 
 void main() {
 	int indx = int(gl_GlobalInvocationID.y * (gl_NumWorkGroups.x * gl_WorkGroupSize.x) + gl_GlobalInvocationID.x);
@@ -44,8 +44,8 @@ void main() {
 	updateRandState(indx);
 
 	float wave_length = sampleWavelength();
-	vec3 dir = tile_mode ? randomUnitVector() : sampleTile(lightPos, aimPoint(), SPREAD);
-	photon_flux = tile_mode ? intensity.x * 4 * 3.1415926535 / float(photon_count) : intensity.x * (4.0 * SPREAD.x * SPREAD.y) / float(photon_count);
+	vec3 dir = point_mode ? randomUnitVector() : sampleTile(lightPos, aimPoint(), SPREAD);
+	photon_flux = point_mode ? intensity.x * 4 * 3.1415926535 / float(photon_count) : intensity.x * (4.0 * SPREAD.x * SPREAD.y) / float(photon_count);
 
 	RayState s = genRay(lightSurface(dir), dir, wave_length);
 	tracePath(s);
