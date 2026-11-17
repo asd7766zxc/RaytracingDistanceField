@@ -159,15 +159,16 @@ signed main() {
 	DistanceFieldGenerator df_generator;
 	// auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
 	//auto dfmesh_rabbit = DFMesh(df_generator, rabbit, mat4::identity(), 0.25, 128);
-	auto dfmesh_wineglass = DFMesh(df_generator, wineglass, mat4::identity(), 4, 128 * 3);
-	auto box = DFMesh(df_generator, MeshBuilder::Sphere(10), mat4::identity(), 0.5, 10);
+	// auto dfmesh_wineglass = DFMesh(df_generator, wineglass, mat4::identity(), 4, 128 * 3);
+	auto box = DFMesh(df_generator, MeshBuilder::Cube(), mat4::identity(), 0.5, 128);
 	vector<GameObject> objs;
 	GameObject obj,obj1,obj3;
-	obj.df_mesh = make_shared<DFMesh>(dfmesh_wineglass);
+	obj.df_mesh = make_shared<DFMesh>(box);
 	obj.position = vec3(1, 0.8, 1.6); // prism
-	obj.position = vec3(0, 1.0, 1.6); // teapot
-	obj.position = vec3(0, 1.0, 1.6); // glass wine
-	// obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
+	obj.position = vec3(1, 0.5, 1.6); // prism 2
+	// obj.position = vec3(0, 1.0, 1.6); // teapot
+	// obj.position = vec3(0, 1.0, 1.6); // glass wine
+	obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
 	obj.type.x = 3;
 
 	{
@@ -190,7 +191,7 @@ signed main() {
 		prism->df_data = DistanceFieldData(padded, 128);
 		df_generator.generateDistanceField(prism->df_data, make_shared<Mesh>(*prism));
 
-		// obj.df_mesh = prism;
+		obj.df_mesh = prism;
 	}
 
 	//obj3.type.x = 3;
@@ -219,7 +220,8 @@ signed main() {
 	obj.orientation = obj.orientation.rotate(vec3(0, 2, 0));
 
 	vec3 initial_light_pos = vec3(-2, 1.1, 1.6); // prism
-	initial_light_pos = vec3(-2,4,1.6);
+	initial_light_pos = vec3(-2, 1.2, 1.6); // prism 2
+	// initial_light_pos = vec3(-2,4,1.6);
 
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {

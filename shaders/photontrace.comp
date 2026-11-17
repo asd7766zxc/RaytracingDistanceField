@@ -10,7 +10,7 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 
 uniform int photon_count;
 
-const vec2 SPREAD = vec2(0.01, 0.12);
+const vec2 SPREAD = vec2(0.5, 0.02);
 
 float photon_flux;
 
@@ -36,7 +36,7 @@ bool onHit(inout RayState s, Hit h) {
 void onMiss(inout RayState s) {}
 
 
-bool tile_mode = true;
+bool tile_mode = false;
 
 void main() {
 	int indx = int(gl_GlobalInvocationID.y * (gl_NumWorkGroups.x * gl_WorkGroupSize.x) + gl_GlobalInvocationID.x);
