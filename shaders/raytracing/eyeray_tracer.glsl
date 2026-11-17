@@ -33,11 +33,17 @@ bool onHit(inout RayState s, Hit h) {
 	if (h.material == MAT_DIELECTRIC) {
 		vec3 rd = s.rd;
 		if (refractRay(s, h, EYE_IOR)) {
-			// s.rd = rd; //pass thru
-			// s.ro = h.p + rd * 0.05;
+			s.rd = rd; //pass thru
+			s.ro = h.p + rd * 0.05;
 		}
 		
 		return true;
+	}
+	if (h.material == MAT_DIFFUSE) {
+		float diffuse = max(0.9 * dot(h.n, normalize(lightPos - h.p)), 0.5);
+		// diffuse = 0.0f;
+		store_color(vec3(eye_radiance * diffuse) * vec3(0.9,0.5,0.5));
+		return false;
 	}
 	if (h.material == MAT_GROUND) {
 		float diffuse = max(0.5 * dot(h.n, normalize(lightPos - h.p)), 0.0);

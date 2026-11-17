@@ -166,13 +166,14 @@ signed main() {
 	auto box = DFMesh(df_generator, MeshBuilder::Sphere(5), mat4::identity(), 0.5, 128);
 	vector<GameObject> objs;
 	GameObject obj,obj1,obj3;
-	obj.df_mesh = make_shared<DFMesh>(box);
+	obj.df_mesh = make_shared<DFMesh>(dfmesh);
 	obj.position = vec3(1, 0.8, 1.6); // prism
 	obj.position = vec3(1, 0.5, 1.6); // prism 2
-	// obj.position = vec3(0, 1.0, 1.6); // teapot
+	obj.position = vec3(1.6, 1.5, 1.6);// teapot
+	obj.position = vec3(-1, 1.3, 3.1);// teapot
 	// obj.position = vec3(1, 1.0, 2.6); // glass wine
-	obj.position = vec3(1, 0.5, 1.6); // crystal
-	obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
+	// obj.position = vec3(1, 0.5, 1.6); // crystal
+	// obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
 	obj.type.x = 3;
 
 	{
@@ -221,13 +222,14 @@ signed main() {
 	int total_time = 0;
 	int frame_index = 0;
 
-	obj.orientation = obj.orientation.rotate(vec3(0, 2, 0));
+	obj.orientation = obj.orientation.rotate(vec3(0, 1.5, 0));
 
 	vec3 initial_light_pos = vec3(-2, 1.1, 1.6); // prism
 	initial_light_pos = vec3(-2, 1.2, 1.6); // prism 2
 	// initial_light_pos = vec3(-2, 2.2, 1.6); // box
 	// initial_light_pos = vec3(-2,2,1.6); // wine
-
+	initial_light_pos = vec3(0, 1, 0); // teapot
+	const int lightray_count = 16 * 100000;
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {
 			glfwPollEvents();
@@ -253,7 +255,7 @@ signed main() {
 			polysplat.render(splat_grid_size, vec3(50000), light_pos, vec3(-20), vec3(20));
 		} else {
 			photontracer.LoadDistanceFieldDatas(df_datas);
-			photontracer.render(16000000, vec3(50000 * 1.2), light_pos, vec3(-20), vec3(20));
+			photontracer.render(lightray_count, vec3(50000 * 1.6), light_pos, vec3(-20), vec3(20));
 		}
 
 		raytracer->LoadDistanceFieldDatas(df_datas);
@@ -263,7 +265,8 @@ signed main() {
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		total_time += duration.count();
 		//std::cout << duration.count() << " s" << '\n';
-		glfwSetWindowTitle(window, (std::string("Raytracing Distance Field - ") + std::to_string(total_time / 1000.0f) + " ms" + " - Frame: " + std::to_string(frame_index) + " - Avg Frame time: " + std::to_string(((float)total_time) / frame_index / 1000.0f) + " ms" + " - Window Size: " + std::to_string(window_width) + "x" + std::to_string(window_height)).c_str());
+		glfwSetWindowTitle(window, (std::string("") + std::to_string(total_time / 1000.0f) + " ms" + " - Frame: " + std::to_string(frame_index) + " - Avg Frame time: " + std::to_string(((float)total_time) / frame_index / 1000.0f) + " ms" + " - Window Size: " + std::to_string(window_width) + "x" + std::to_string(window_height) + " " +\
+		 (use_splat ? ("Vertex Grid : " + std::to_string(splat_grid_size) + "^2") : (std::to_string(lightray_count) + " Light Rays"))).c_str());
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();

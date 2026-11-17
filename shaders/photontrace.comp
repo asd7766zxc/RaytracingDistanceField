@@ -49,14 +49,14 @@ void main() {
 	float wave_length = sampleWavelength();
 	vec3 dir = point_mode ? randomUnitVector() : sampleTile(lightPos, aimPoint(), SPREAD);
 
-	dir = normalize(aimPoint() - lightPos);
+	// dir = normalize(aimPoint() - lightPos);
 	
 
 	photon_flux = point_mode ? intensity.x * 4 * 3.1415926535 / float(photon_count) : intensity.x * (4.0 * SPREAD.x * SPREAD.y) / float(photon_count);
 
-	photon_flux = 0.5 * intensity.x * SURFACE_RECT.x * SURFACE_RECT.y  / float(photon_count);
+	// photon_flux = 0.5 * intensity.x * SURFACE_RECT.x * SURFACE_RECT.y  / float(photon_count);
 	vec3 ro = lightSurface(dir);
-	ro = sampleSurface(lightPos, aimPoint(), SURFACE_RECT) + lightSurface(dir) + 0.05 * dir;
+	// ro = sampleSurface(lightPos, aimPoint(), SURFACE_RECT) + lightSurface(dir) + 0.05 * dir;
 	// ro = lightSurface(dir);
 
 	RayState s = genRay(ro, dir, wave_length);
