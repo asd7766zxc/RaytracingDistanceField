@@ -17,7 +17,7 @@ float photon_flux;
 bool onHit(inout RayState s, Hit h) {
 	if (h.material == MAT_GROUND) {
 		vec2 uv;
-		if (groundUV(h.p, uv))
+		if (s.refracted && groundUV(h.p, uv))
 			splat(s.wave_length, uv, clamp(s.radiance * photon_flux * 1e5, 0.0, 1e7));
 		return false;
 	}

@@ -65,4 +65,5 @@ target_link_libraries(rtdf PRIVATE glfw glad tinyobjloader imgui)
 target_compile_definitions(rtdf PRIVATE
     SHADER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
     ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets/")
+
 target_include_directories(rtdf PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

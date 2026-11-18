@@ -38,6 +38,7 @@ public:
 		return mat4::trans(-df_box.getMinCorner());
 	}
 	mat4 getDFToModelMatrix() const {
-		//return mat4::trans(voxel_box.getMinCorner()) * mat4::scale(voxel_size);
+		return mat4::identity();
+		// return mat4::trans(voxel_box.getMinCorner()) * mat4::scale(voxel_size);
 	}
 };

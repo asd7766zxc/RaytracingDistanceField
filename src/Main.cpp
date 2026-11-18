@@ -29,10 +29,30 @@
 
 
 shared_ptr<Player> player;
-bool use_splat = true;
+bool use_splat = false;
+bool use_movingobject = false;
 bool start_render = false;
 int window_width = 800, window_height = 800;
+int LIGHTGRID = 1000;
+int LIGHTRAY_COUNT = 16000000;
+int STOPA,STOPB,STOPC,STOPD;
+float intensity = 60000;
 shared_ptr<RayTracer> raytracer;
+void loadSceneSettings(std::string path){
+	std::ifstream in(path);
+	if (!in) return;
+	std::string line;
+	int x,y,z,w;
+	float xf;
+	while (std::getline(in, line)) {
+		if (sscanf_s(line.c_str(), "DEFAULT_RAY_MODE=%d", &x) == 1) use_splat = x;
+		else if (sscanf_s(line.c_str(), "LIGHTRAY_COUNT=%d", &x) == 1) LIGHTRAY_COUNT = x;
+		else if (sscanf_s(line.c_str(), "LIGHTGRID=%d", &x) == 1) LIGHTGRID = x;
+		else if (sscanf_s(line.c_str(), "MOVING_OBJECT_RENDER=%d", &x) == 1) use_movingobject = x;
+		else if (sscanf_s(line.c_str(), "STOPA=%d,STOPB=%d,STOPC=%d,STOPD=%d", &x, &y, &z, &w) == 4) STOPA = x, STOPB = y, STOPC = z, STOPD = w;
+		else if (sscanf_s(line.c_str(), "INTENSITY=%f", &xf) == 1) intensity = xf;
+	}
+}
 void window_resize(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 	player->camera->windowResize(width, height);
@@ -120,6 +140,7 @@ signed main() {
 
 #pragma endregion
 
+	loadSceneSettings(ASSET_DIR "scene.txt");
 	glViewport(0, 0, window_width, window_height);
 	player->camera->windowResize(window_width, window_height);
 	player->updateView();
@@ -133,7 +154,7 @@ signed main() {
 
 	PhotonTracer photontracer(2048, 2048);
 	PolygonSplatting polysplat(2048, 2048);
-	const int splat_grid_size = 1024; // vertices per side -> 511^2 cells
+	const int splat_grid_size = LIGHTGRID; // vertices per side -> 511^2 cells
 
 	DefaultRenderer renderer;
 	raytracer = make_shared<RayTracer>();
@@ -151,6 +172,7 @@ signed main() {
 	shared_ptr<ModelLoader> teapot_nolid_raw = make_shared<ModelLoader>(ASSET_DIR "utah_teapot_nolid.obj");
 	shared_ptr<ModelLoader> rabbit_raw = make_shared<ModelLoader>(ASSET_DIR "bunny.obj");
 	shared_ptr<ModelLoader> wineglass_raw = make_shared<ModelLoader>(ASSET_DIR "another_wine.obj");
+
 	
 	shared_ptr<Mesh> teapot_nolid = make_shared<Mesh>(teapot_nolid_raw->vertices, teapot_nolid_raw->vertex_size * 8 * 4, teapot_nolid_raw->vertex_size);
 	shared_ptr<Mesh> rabbit = make_shared<Mesh>(rabbit_raw->vertices, rabbit_raw->vertex_size * 8 * 4, rabbit_raw->vertex_size);
@@ -222,7 +244,7 @@ signed main() {
 	vec3 initial_light_pos = vec3(-2, 1.1, 1.6); // prism
 	initial_light_pos = vec3(-2, 1.2, 1.6); // prism 2
 	// initial_light_pos = vec3(-2,4,1.6);
-
+	const int lightray_count = LIGHTRAY_COUNT;
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {
 			glfwPollEvents();
@@ -239,29 +261,35 @@ signed main() {
 		vec3 light_pos = initial_light_pos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 
 		player->updateCameraPos(window, delta);
-		// obj.orientation = obj.orientation.rotate(vec3(0, 0.01, 0));
+		if(use_movingobject){
+			// obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01));
+			obj.position = (mat4::Ry(0.01) * vec4((obj.position - initial_light_pos),1.0f)).toVec3() + initial_light_pos;
+		}
 		df_datas[0] = obj.getDFOjbect(); 
 
 		auto start = std::chrono::steady_clock::now();
 		if (use_splat) {
 			polysplat.LoadDistanceFieldDatas(df_datas);
-			polysplat.render(splat_grid_size, vec3(50000), light_pos, vec3(-20), vec3(20));
+			polysplat.render(splat_grid_size, vec3(intensity), light_pos, vec3(-20), vec3(20));
 		} else {
 			photontracer.LoadDistanceFieldDatas(df_datas);
-			photontracer.render(16000000, vec3(50000 * 1.2), light_pos, vec3(-20), vec3(20));
+			photontracer.render(lightray_count, vec3(intensity), light_pos, vec3(-20), vec3(20));
 		}
 
 		raytracer->LoadDistanceFieldDatas(df_datas);
 		raytracer->use_splat = use_splat;
-		raytracer->render(player->camera,vec3(50000 * 1.2), light_pos, vec3(-20), vec3(20));
+		raytracer->render(player->camera,vec3(intensity ), light_pos, vec3(-20), vec3(20));
 		auto end = std::chrono::steady_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		total_time += duration.count();
 		//std::cout << duration.count() << " s" << '\n';
-		glfwSetWindowTitle(window, (std::string("Raytracing Distance Field - ") + std::to_string(total_time / 1000.0f) + " ms" + " - Frame: " + std::to_string(frame_index) + " - Avg Frame time: " + std::to_string(((float)total_time) / frame_index / 1000.0f) + " ms" + " - Window Size: " + std::to_string(window_width) + "x" + std::to_string(window_height)).c_str());
+		glfwSetWindowTitle(window, (std::string("") + std::to_string(total_time / 1000.0f) + " ms" + " - Frame: " + std::to_string(frame_index) + " - Avg Frame time: " + std::to_string(((float)total_time) / frame_index / 1000.0f) + " ms" + " - Window Size: " + std::to_string(window_width) + "x" + std::to_string(window_height) + " " +\
+         (use_splat ? ("Vertex Grid : " + std::to_string(splat_grid_size) + "^2") : (std::to_string(lightray_count) + " Light Rays"))).c_str());
 
 		glfwSwapBuffers(window);
 		glfwPollEvents();
+
+		if(frame_index == STOPA || frame_index == STOPB || frame_index == STOPC || frame_index == STOPD) start_render = false;
 	}
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
