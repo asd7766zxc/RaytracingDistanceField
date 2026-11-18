@@ -46,7 +46,7 @@ bool onHit(inout RayState s, Hit h) {
 		return false;
 	}
 	if (h.material == MAT_GROUND) {
-		float diffuse = max(0.5 * dot(h.n, normalize(lightPos - h.p)), 0.0);
+		float diffuse = max(0.5 * dot(h.n, normalize(lightPos - h.p)), 0.1);
 		// diffuse = 0.0f;
 		store_color(eye_radiance * diffuse + readCausticMap(h.p));
 		return false;

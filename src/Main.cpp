@@ -170,7 +170,9 @@ signed main() {
 	obj.position = vec3(1, 0.8, 1.6); // prism
 	obj.position = vec3(1, 0.5, 1.6); // prism 2
 	obj.position = vec3(1.6, 1.5, 1.6);// teapot
-	obj.position = vec3(-1, 1.3, 3.1);// teapot
+	obj.position = vec3(-1, 1.3, 2.7);// teapot
+	// obj.position = vec3(-1.5, 1.3, 3.2);// teapot
+	// obj.position = vec3(0, 1.3, 0);
 	// obj.position = vec3(1, 1.0, 2.6); // glass wine
 	// obj.position = vec3(1, 0.5, 1.6); // crystal
 	// obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
@@ -221,15 +223,15 @@ signed main() {
 	photontracer.LoadDistanceFieldDatas(df_datas);
 	int total_time = 0;
 	int frame_index = 0;
-
-	obj.orientation = obj.orientation.rotate(vec3(0, 1.5, 0));
+	//3.2
+	obj.orientation = obj.orientation.rotate(vec3(0, 3.5, 0));
 
 	vec3 initial_light_pos = vec3(-2, 1.1, 1.6); // prism
 	initial_light_pos = vec3(-2, 1.2, 1.6); // prism 2
 	// initial_light_pos = vec3(-2, 2.2, 1.6); // box
 	// initial_light_pos = vec3(-2,2,1.6); // wine
-	initial_light_pos = vec3(0, 1, 0); // teapot
-	const int lightray_count = 16 * 100000;
+	initial_light_pos = vec3(0,1,0); // teapot
+	const int lightray_count = 16 * 1000000;
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {
 			glfwPollEvents();
@@ -260,7 +262,7 @@ signed main() {
 
 		raytracer->LoadDistanceFieldDatas(df_datas);
 		raytracer->use_splat = use_splat;
-		raytracer->render(player->camera,vec3(50000 * 1.2), light_pos, vec3(-20), vec3(20));
+		raytracer->render(player->camera,vec3(50000 * 1.2), light_pos, vec3(-30), vec3(30));
 		auto end = std::chrono::steady_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		total_time += duration.count();

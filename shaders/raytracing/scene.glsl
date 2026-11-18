@@ -57,7 +57,7 @@ const float WAVELENGTH_MIN_NM = 380.0;
 const float WAVELENGTH_MAX_NM = 780.0;
 const float WAVELENGTH_MID = 0.425;
 
-const float LIGHT_RADIUS = 0.5;
+const float LIGHT_RADIUS = 0.25;
 
 float boxSDF(vec3 p){
 	vec3 b = abs(p - BOX_CENTER) - BOX_HALF;
