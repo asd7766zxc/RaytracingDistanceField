@@ -53,7 +53,7 @@ public:
 		df_list.BufferData(objs);
 	}
 	
-	void render(int photon_count,vec3 intensity,vec3 lightPos,vec3 groundMin,vec3 groundMax) {
+	void render(vec3 IOR,int photon_count,vec3 intensity,vec3 lightPos,vec3 groundMin,vec3 groundMax,bool point_mode,vec3 spread) {
 		static int frame_index = 0;
 		++frame_index;
 		caustic_map_r.BindLocation(3);
@@ -72,6 +72,11 @@ public:
 		photontrace.setVec3("groundMin", groundMin);
 		photontrace.setVec3("groundMax", groundMax);
 		photontrace.setFloat("frame_seed",glfwGetTime());
+		photontrace.setInt("point_mode", point_mode);
+		photontrace.setVec3("spread", spread);
+		photontrace.setFloat("IORSTART", IOR.x);
+		photontrace.setFloat("IOREND", IOR.y);
+
 		float k = 1.0f - 1.0f / (float)frame_index;
 		int groups = (photon_count + 63) / 64;
 		int gx = std::min(groups, 65535);

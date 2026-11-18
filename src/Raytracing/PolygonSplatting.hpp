@@ -11,7 +11,6 @@ public:
 	GLuint caustic_map = 0;
 	int map_w = 0, map_h = 0;
 	// R / G / B
-	vec3 refract_indices = vec3(1.30f, 1.40f, 1.50f);
 	ShaderArrayBuffer<DF_Object> df_list;
 	struct splat_vertex {
 		vec4 pos;
@@ -47,7 +46,7 @@ public:
 		objects_count = objs.size();
 		df_list.BufferData(objs);
 	}
-	void render(int grid_size, vec3 intensity, vec3 lightPos, vec3 groundMin, vec3 groundMax) {
+	void render(vec3 refract_indices,int grid_size, vec3 intensity, vec3 lightPos, vec3 groundMin, vec3 groundMax,bool point_mode,vec3 spread) {
 		if (grid_size < 2) return;
 
 		
@@ -92,6 +91,8 @@ public:
 		polygonsplat.setVec3("groundMin", groundMin);
 		polygonsplat.setVec3("groundMax", groundMax);
 		polygonsplat.setFloat("refract_index", iors[channel]);
+		polygonsplat.setInt("point_mode", point_mode);
+		polygonsplat.setVec3("spread", spread);
 
 		glDispatchCompute((grid_size + 7) / 8, (grid_size + 7) / 8, 1);
 		glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);

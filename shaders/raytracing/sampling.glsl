@@ -4,7 +4,8 @@
 #include "raytracing/rng.glsl"
 #include "raytracing/scene.glsl"
 
-const float IOR[3] = float[](1.2, 1.6, 1.4);
+uniform float IORSTART = 1.2;
+uniform float IOREND = 1.4;
 const vec3 DEFAULT_AIM = vec3(-1, 1.5, 1.6);
 
 float sampleWavelength() {
@@ -12,7 +13,7 @@ float sampleWavelength() {
 }
 
 float wavelengthIOR(float wave_length) {
-	return mix(IOR[2], IOR[0], wave_length);
+	return mix(IOREND, IORSTART, wave_length);
 }
 
 vec3 aimPoint() {

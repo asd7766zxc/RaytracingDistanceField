@@ -15,6 +15,9 @@ uniform int grid_size;
 int out_id;
 vec3 init_dir;
 
+
+const vec2 SPREAD = vec2(0.5, 0.02);
+
 bool onHit(inout RayState s, Hit h) {
 	if (h.material == MAT_GROUND) {
 		if (s.refracted) splatted[out_id] = vert(vec4(h.p, s.radiance), vec4(init_dir, s.path_hash));
@@ -34,16 +37,27 @@ bool onHit(inout RayState s, Hit h) {
 	return false;
 }
 
+vec3 uvOnTile(vec2 tile,vec2 uv){
+	vec3 w = normalize(aimPoint() - lightPos);
+	vec3 u = normalize(cross(vec3(0, 0, 1), w));
+	vec3 v = cross(w, u);
+	return normalize(w + tile.x * (2.0 * uv.x - 1.0) * u + tile.y * (2.0 * uv.y- 1.0) * v);
+}
+
 void onMiss(inout RayState s) {}
+
+uniform bool point_mode = true;
+uniform vec3 spread;
 
 void main() {
 	ivec2 indx = ivec2(gl_GlobalInvocationID.xy);
 	if (indx.x >= grid_size || indx.y >= grid_size) return;
 
-	init_dir = octDecode(vec2(indx) / float(grid_size - 1));
+	init_dir = point_mode ? octDecode(vec2(indx) / float(grid_size - 1)) : uvOnTile(spread.xy,vec2(indx) / float(grid_size - 1));
 	out_id = grid_size * indx.x + indx.y;
 	splatted[out_id] = vert(vec4(0.0), vec4(init_dir, -1.0));
 
 	RayState s = genRay(lightSurface(init_dir), init_dir, WAVELENGTH_MID);
+	s.path_hash = 10;
 	tracePath(s);
 }

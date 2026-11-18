@@ -5,7 +5,7 @@
 BYTE distance_field_tmp[256 * 256 * 256 * 4];
 
 bool DistanceFieldGenerator::read_distace_field_cache(DistanceFieldData df_data, shared_ptr<Mesh> mesh){
-    std::string cache_path = ASSET_DIR "cache/" + std::to_string(mesh->hash()) + ".bin";
+    std::string cache_path = ASSET_DIR "cache/" + std::format("{:x}",(combine_hashes(df_data.hash(),mesh->hash()))) + ".bin";
 	std::ifstream cache_file(cache_path,std::ios::in | std::ios::binary);
 	if (!cache_file.is_open()) {
 		return false;
@@ -20,8 +20,9 @@ bool DistanceFieldGenerator::read_distace_field_cache(DistanceFieldData df_data,
 
 
 void DistanceFieldGenerator::write_distance_field_cache(DistanceFieldData df_data, shared_ptr<Mesh> mesh){
+    std::size_t size_hash = std::hash<float>{}(df_data.sizeflag);
     std::filesystem::create_directories(ASSET_DIR "cache/");
-	std::string cache_path = ASSET_DIR "cache/" + std::to_string(mesh->hash()) + ".bin";
+	std::string cache_path = ASSET_DIR "cache/" +  std::format("{:x}",(combine_hashes(df_data.hash(),mesh->hash()))) + ".bin";
 	std::ofstream cache_file(cache_path, std::ios::out | std::ios::binary);
 	if (!cache_file.is_open()) {
 		return;

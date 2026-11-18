@@ -26,6 +26,7 @@ public:
 		}
 		updateMesh(vertices.data(), vertices.size());
 		df_data = DistanceFieldData(primitive_aabb, resolution);
+		df_data.sizeflag = scaling;
 		df_generator.generateDistanceField(df_data, make_shared<Mesh>(*this));
 	}
 };

@@ -1,4 +1,4 @@
-player->rx = -1.40179646;
-player->yx = -1.11299753;
+player->rx = -1.17679572;
+player->yx = -2.98800111;
 player->rz = 0;
-player->position = vec3(9.21095467, 5.60618496, -0.122462332);
+player->position = vec3(0.534892857, 2.96915627, -0.869174302);

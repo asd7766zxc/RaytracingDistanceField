@@ -13,10 +13,13 @@ public:
 	float df_size = 0;
 	float longest_axis_length = 0;
 	int sx = 0, sy = 0, sz = 0;
+	float sizeflag = 0.0f;
+	int resolutionflag = 0;
 	DistanceFieldData() {}
 	DistanceFieldData(aabb rough_box, int resolution) {
 		float longest_axis_size = rough_box.axis(rough_box.longestAxis()).size();
 		df_size = longest_axis_size / resolution;
+		resolutionflag = resolution;
 		sx = (int)std::ceil(rough_box.x.size() / df_size) + 1;
 		sy = (int)std::ceil(rough_box.y.size() / df_size) + 1;
 		sz = (int)std::ceil(rough_box.z.size() / df_size) + 1;
@@ -40,5 +43,10 @@ public:
 	mat4 getDFToModelMatrix() const {
 		return mat4::identity();
 		// return mat4::trans(voxel_box.getMinCorner()) * mat4::scale(voxel_size);
+	}
+	std::size_t hash() const {
+		std::size_t h1 = std::hash<float>{}(sizeflag);
+		std::size_t h2 = std::hash<int>{}(resolutionflag);
+		return combine_hashes(h1,h2);
 	}
 };
