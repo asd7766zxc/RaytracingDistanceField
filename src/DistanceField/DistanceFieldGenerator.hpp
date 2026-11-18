@@ -2,6 +2,7 @@
 #include "ShaderPipelines/ShaderProgram.hpp"
 #include "DistanceField/DistanceFieldData.hpp"
 #include "Mesh/Mesh.hpp"
+#include <chrono>
 
 class DistanceFieldGenerator {
 public:
@@ -41,7 +42,9 @@ public:
 	}
 
 	void generateDistanceField(DistanceFieldData df_data, shared_ptr<Mesh> mesh) {
-		clock_t start_time = clock();
+		if(read_distace_field_cache(df_data,mesh)) return;
+
+		auto start = std::chrono::steady_clock::now();
 		 TransformVertices(mat4::trans(df_data.df_box.size() * 0.5) * mat4::scale(0.75) * mat4::trans(-df_data.df_box.size()*0.5-df_data.df_box.getMinCorner()), mesh);
 		//TransformVertices(mat4::trans(-df_data.df_box.getMinCorner()), mesh);
 		naive_program.use();
@@ -56,9 +59,15 @@ public:
 
 		glDispatchCompute((df_data.sx + 7) / 8, (df_data.sy + 7) / 8, (df_data.sz + 7) / 8);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
-		clock_t end_time = clock();
+		auto end = std::chrono::steady_clock::now();
+		
+		glFinish();
 
-		std::cout << std::endl << "distance field calculated for model: " << mesh->VAO << " using " << (end_time - start_time) / (float)CLOCKS_PER_SEC << " seconds." << std::endl;
+		std::cout << std::endl << "distance field calculated for model: " << mesh->VAO << " using " << (std::chrono::duration_cast<std::chrono::seconds>(end - start)) << " seconds." << std::endl;
+		write_distance_field_cache(df_data,mesh);
 	}
+	
+	bool read_distace_field_cache(DistanceFieldData df_data, shared_ptr<Mesh> mesh);
+	void write_distance_field_cache(DistanceFieldData df_data, shared_ptr<Mesh> mesh);
 	//TODO: hash the mesh for storing df cache
 };

@@ -1,7 +1,7 @@
 #ifndef EYERAY_TRACER_GLSL
 #define EYERAY_TRACER_GLSL
 
-#define MAX_DEPTH 100
+#define MAX_DEPTH 50
 
 #include "raytracing/scene.glsl"
 #include "raytracing/caustic_map.glsl"

@@ -2,6 +2,7 @@
 #include "Math/Vec.hpp"
 #include "ShaderPipelines/BufferBuilder.hpp"
 #include "Math/aabb.hpp"
+#include "Helpers/Helpers.hpp"
 
 struct Vertex {
 	vec3 position;
@@ -65,5 +66,11 @@ public:
 		genVertexBufferForDraw(_vertices, count * 8);
 		genCpuSideCopy(_vertices);
 		genPrimitiveAABB();
+	}
+	std::size_t hash() const {
+		std::size_t h1 = std::hash<GLuint>{}(VAO);
+		std::size_t h2 = std::hash<GLuint>{}(VBO);
+		std::size_t h3 = std::hash<int>{}(vertex_count);
+		return combine_hashes(h1,h2,h3);
 	}
 };

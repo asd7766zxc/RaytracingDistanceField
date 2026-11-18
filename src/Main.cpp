@@ -182,18 +182,18 @@ signed main() {
 
 
 	DistanceFieldGenerator df_generator;
-	// auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 128);
-	//auto dfmesh_rabbit = DFMesh(df_generator, rabbit, mat4::identity(), 0.25, 128);
-	auto dfmesh_text = DFMesh(df_generator, textmodel, mat4::identity(), 1.5, 256);
+	auto dfmesh = DFMesh(df_generator, teapot_nolid, mat4::identity(), 1, 256);
+	// auto dfmesh_rabbit = DFMesh(df_generator, rabbit, mat4::identity(), 0.25, 128);
+	// auto dfmesh_text = DFMesh(df_generator, textmodel, mat4::identity(), 1.5, 256);
 	// auto dfmesh_wineglass = DFMesh(df_generator, wineglass, mat4::identity(), 4, 128 * 3);
 	auto box = DFMesh(df_generator, MeshBuilder::Cube(), mat4::identity(), 0.5, 128);
 	vector<GameObject> objs;
 	GameObject obj,obj1,obj3;
-	obj.df_mesh = make_shared<DFMesh>(dfmesh_text);
+	obj.df_mesh = make_shared<DFMesh>(dfmesh);
 	obj.position = vec3(1, 0.8, 1.6); // prism
 	obj.position = vec3(1, 0.5, 1.6); // prism 2
-	obj.position = vec3(0, 0.5, 0); 
-	// obj.position = vec3(0, 1.0, 1.6); // teapot
+	// obj.position = vec3(0, 0.5, 0); 
+	obj.position = vec3(0, 1.0, 1.6); // teapot
 	// obj.position = vec3(0, 1.0, 1.6); // glass wine
 	// obj.orientation = quat(0.70710678f, vec3(0, 0, -0.70710678f));
 	// obj.orientation = quat(0.70710678f, vec3(0, -0.70710678f, 0));
@@ -249,7 +249,8 @@ signed main() {
 
 	vec3 initial_light_pos = vec3(-2, 1.1, 1.6); // prism
 	initial_light_pos = vec3(-2, 1.2, 1.6); // prism 2
-	initial_light_pos = vec3(1.5,2,0);
+	initial_light_pos = vec3(-4, 1.8, 3.6); // prism 2
+	// initial_light_pos = vec3(1.5,2,0);
 	const int lightray_count = LIGHTRAY_COUNT;
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {
