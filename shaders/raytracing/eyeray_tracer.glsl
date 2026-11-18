@@ -1,7 +1,7 @@
 #ifndef EYERAY_TRACER_GLSL
 #define EYERAY_TRACER_GLSL
 
-#define MAX_DEPTH 50
+#define MAX_DEPTH 100
 
 #include "raytracing/scene.glsl"
 #include "raytracing/caustic_map.glsl"
@@ -50,7 +50,7 @@ bool onHit(inout RayState s, Hit h) {
 }
 
 void onMiss(inout RayState s) {
-	store_color(vec3(0.5)); //ambient
+	store_color(vec3(0)); //ambient
 }
 
 void main() {

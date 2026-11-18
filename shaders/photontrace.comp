@@ -1,7 +1,7 @@
 #version 430 core
 #extension GL_ARB_bindless_texture : require
 
-#define MARCH_STEPS 20
+#define MARCH_STEPS 40
 #include "raytracing/sampling.glsl"
 #include "raytracing/caustic_map.glsl"
 #include "raytracing/raytracing_arbiter.glsl"
@@ -36,7 +36,7 @@ bool onHit(inout RayState s, Hit h) {
 void onMiss(inout RayState s) {}
 
 
-bool point_mode = false;
+bool point_mode = true;
 
 void main() {
 	int indx = int(gl_GlobalInvocationID.y * (gl_NumWorkGroups.x * gl_WorkGroupSize.x) + gl_GlobalInvocationID.x);

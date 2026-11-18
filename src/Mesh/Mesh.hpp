@@ -1,5 +1,4 @@
 #pragma once
-#include "Helpers/Helpers.hpp"
 #include "Math/Vec.hpp"
 #include "ShaderPipelines/BufferBuilder.hpp"
 #include "Math/aabb.hpp"
@@ -9,7 +8,6 @@ struct Vertex {
 	vec3 normal;
 	vec3 texcoord;
 };
-
 class Mesh {
 public:
 	GLuint VAO = 0, VBO = 0;

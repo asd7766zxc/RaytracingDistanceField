@@ -2,7 +2,7 @@
 #define SCENE_GLSL
 
 #ifndef MARCH_STEPS
-#define MARCH_STEPS 50
+#define MARCH_STEPS 100
 #endif
 
 #define MAT_DIFFUSE    0
