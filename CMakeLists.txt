@@ -40,8 +40,8 @@ include(FetchContent)
 FetchContent_Declare(
     stb
     GIT_REPOSITORY https://github.com/nothings/stb.git
-    GIT_TAG        master
-    GIT_SHALLOW    TRUE
+    GIT_TAG        033efa1bcb750136ac98e997d53833b758e0089b
+    GIT_SHALLOW    FALSE
 )
 FetchContent_MakeAvailable(stb)
 

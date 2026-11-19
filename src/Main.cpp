@@ -35,20 +35,9 @@
 
 #include <ranges>
 
-void saveTexHDR(const std::string& path, GLuint tex) {
-    int w, h;
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
-    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
-    std::vector<float> px(w * h * 3);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, px.data());
-    stbi_write_hdr(path.c_str(), w, h, 3, px.data());
-}
-
 shared_ptr<Player> player;
 bool use_splat = false;
-bool use_movingobject = false;
+int use_movingobject = 0;
 bool start_render = false;
 int window_width = 800, window_height = 800;
 int LIGHTGRID = 1000;
@@ -113,9 +102,10 @@ void loadSceneSettings(std::string path){
 		else if (sscanf_s(line.c_str(), "nowindow=%d", &x) == 1) nowindow = x;
 		else if (sscanf_s(line.c_str(), "IORPOINT=%f,%f", &xf,&yf) == 2) refracPoint = vec3(xf,yf,0.0);
 		else if (sscanf_s(line.c_str(), "IORPOLY=%f,%f", &xf,&yf) == 2) refracSplat = vec3(xf,yf,0.0);
-		else if (sscanf_s(line.c_str(), "POLYWAVE=%100s", &tmp[0]) == 1){
-			for (auto part : tmp | std::views::split(',')) 
-        	polywavelength.push_back(std::stof(std::string(part.begin(), part.end())));
+		else if (sscanf_s(line.c_str(), "POLYWAVE=%d", &x) == 1){
+			for(int i = 0; i < x; ++i){
+				polywavelength.push_back(float(i + 0.5f) / x);
+			}
 		}
 
 	}
@@ -141,6 +131,18 @@ void saveTexPPM(const std::string& path, GLuint tex) {
     std::ofstream f(path, std::ios::binary);
     f << "P6\n" << w << ' ' << h << "\n255\n";
     f.write(px.data(), px.size());
+}
+
+void savePNG(const std::string& path, GLuint tex) {
+    int w, h;
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+    std::vector<unsigned char> px(w * h * 4);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);          
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_UNSIGNED_BYTE, px.data());
+	//stbi_flip_vertically_on_write(1);             
+    stbi_write_png(path.c_str(), w, h, 4, px.data(), w * 4);
 }
 BYTE tmp[128 * 128 * 128];
 signed main() {
@@ -403,7 +405,7 @@ if(!nowindow){
          (use_splat ? ("Vertex Grid : " + std::to_string(splat_grid_size) + "^2") : (std::to_string(lightray_count) + " Light Rays"))).c_str();
 		 
 		if(frame_index >= STOPA){
-			saveTexHDR((outputdir + "img.hdr").c_str(),raytracer->texture);
+			savePNG((outputdir + "img.png").c_str(),raytracer->texture);
     		std::ofstream(outputdir + "info.txt", std::ios::binary) << infos;
 			break;
 		}
@@ -431,10 +433,8 @@ if(!nowindow){
 		vec3 light_pos = lightPos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 
 		player->updateCameraPos(window, delta);
-		if(use_movingobject){
-			// obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01));
-			obj.position = (mat4::Ry(0.01) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
-		}
+		if(use_movingobject == 1) obj.position = (mat4::Ry(0.01) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
+		if(use_movingobject == 2) obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01));
 		df_datas[0] = obj.getDFOjbect(); 
 
 		auto start = std::chrono::steady_clock::now();
