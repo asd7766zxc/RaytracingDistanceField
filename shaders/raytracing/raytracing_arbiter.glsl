@@ -28,7 +28,7 @@ bool refractRay(inout RayState s, Hit h, float ior) {
 	float cs = min(dot(-s.rd, h.n), 1.0);
 	bool tir = eta * sqrt(1.0 - cs * cs) > 1.0;
 	s.rd = tir ? reflect(s.rd, h.n) : refract(s.rd, h.n, eta);
-	s.ro = h.p + s.rd * 0.05;
+	s.ro = h.p + (tir ? h.n : -h.n) * 0.03 + s.rd * 0.01;
 	s.refracted = true;
 	if (!tir) s.inside_media = !s.inside_media;
 	return tir;

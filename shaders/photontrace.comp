@@ -1,7 +1,6 @@
 #version 430 core
 #extension GL_ARB_bindless_texture : require
 
-#define MARCH_STEPS 60
 #include "raytracing/sampling.glsl"
 #include "raytracing/caustic_map.glsl"
 #include "raytracing/raytracing_arbiter.glsl"
@@ -47,7 +46,9 @@ void main() {
 	float wave_length = sampleWavelength();
 	vec3 dir = point_mode ? randomUnitVector() : sampleTile(lightPos, aimPoint(), spread.xy);
 	photon_flux = point_mode ? intensity.x * 4 * 3.1415926535 / float(photon_count) : intensity.x * (4.0 * spread.x * spread.y) / float(photon_count);
-
+	if(!point_mode){
+		photon_flux *= pow(dot(dir, normalize(aimPoint() - lightPos)), 3.0);
+	}
 	RayState s = genRay(lightSurface(dir), dir, wave_length);
 	tracePath(s);
 }

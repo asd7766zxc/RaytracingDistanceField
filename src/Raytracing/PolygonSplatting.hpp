@@ -46,7 +46,16 @@ public:
 		objects_count = objs.size();
 		df_list.BufferData(objs);
 	}
-	void render(vec3 refract_indices,int grid_size, vec3 intensity, vec3 lightPos, vec3 groundMin, vec3 groundMax,bool point_mode,vec3 spread) {
+	static float cie_g(float x, float mu, float s1, float s2) { float t = (x - mu) / (x < mu ? s1 : s2); return std::exp(-0.5f * t * t); }
+	static vec3 wavelengthToRGB(float nm) {
+    float X = 1.056f*cie_g(nm,599.8f,37.9f,31.0f) + 0.362f*cie_g(nm,442.0f,16.0f,26.7f) - 0.065f*cie_g(nm,501.1f,20.4f,26.2f);
+    float Y = 0.821f*cie_g(nm,568.8f,46.9f,40.5f) + 0.286f*cie_g(nm,530.9f,16.3f,31.1f);
+    float Z = 1.217f*cie_g(nm,437.0f,11.8f,36.0f) + 0.681f*cie_g(nm,459.0f,26.0f,13.8f);
+    return vec3(std::max( 3.2406f*X - 1.5372f*Y - 0.4986f*Z, 0.f) / 0.4403f,
+                std::max(-0.9689f*X + 1.8758f*Y + 0.0415f*Z, 0.f) / 0.2884f,
+                std::max( 0.0557f*X - 0.2040f*Y + 1.0570f*Z, 0.f) / 0.2732f);
+	}
+	void render(std::vector<float> iors,vec3 iorI,int grid_size, vec3 intensity, vec3 lightPos, vec3 groundMin, vec3 groundMax,bool point_mode,vec3 spread) {
 		if (grid_size < 2) return;
 
 		
@@ -55,6 +64,11 @@ public:
 			splatted_list.AdjustSize();
 			allocated_grid = grid_size;
 		}
+
+		std::vector<vec3> w(iors.size()); vec3 sum(0.0f);
+		for (size_t i = 0; i < iors.size(); ++i) { w[i] = wavelengthToRGB(380.f + 400.f * iors[i]); sum = sum + w[i]; }
+		for (auto& x : w) x = vec3(sum.x > 0 ? x.x / sum.x : 0, sum.y > 0 ? x.y / sum.y : 0, sum.z > 0 ? x.z / sum.z : 0);
+
 		df_list.BindLocation(2);
 		splatted_list.BindLocation(7);
 
@@ -80,9 +94,8 @@ public:
 		glDisable(GL_DEPTH_TEST);
 		glDisable(GL_BLEND);
 
-		const float iors[3] = { refract_indices.x, refract_indices.y, refract_indices.z };
 		const float powers[3] = { intensity.x, intensity.y, intensity.z };
-		for (int channel = 0; channel < 3; ++channel) {
+		for (int channel = 0; channel < iors.size(); ++channel) {
 		polygonsplat.use();
 		polygonsplat.setInt("objects_count", objects_count);
 		polygonsplat.setInt("grid_size", grid_size);
@@ -90,7 +103,7 @@ public:
 		polygonsplat.setVec3("lightPos", lightPos);
 		polygonsplat.setVec3("groundMin", groundMin);
 		polygonsplat.setVec3("groundMax", groundMax);
-		polygonsplat.setFloat("refract_index", iors[channel]);
+		polygonsplat.setFloat("refract_index", iorI.y + (iorI.x - iorI.y) * iors[channel]);
 		polygonsplat.setInt("point_mode", point_mode);
 		polygonsplat.setVec3("spread", spread);
 
@@ -102,10 +115,11 @@ public:
 		rasterize_splat.setInt("channel", channel);
 		rasterize_splat.setVec3("groundMin", groundMin);
 		rasterize_splat.setVec3("groundMax", groundMax);
-		rasterize_splat.setFloat("intensity", powers[channel]);
+		rasterize_splat.setFloat("intensity", intensity.x);
 		rasterize_splat.setFloat("energy_scale", energy_scale);
 		rasterize_splat.setFloat("min_area_px", min_area_px);
 		rasterize_splat.setFloat("max_area_px", max_area_ratio * map_w * map_h);
+		rasterize_splat.setVec3("channel_weight", w[channel]);
 		glUniform2f(glGetUniformLocation(rasterize_splat.ID, "map_size"), (float)map_w, (float)map_h);
 
 		glBindVertexArray(emptyVAO);

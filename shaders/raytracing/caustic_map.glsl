@@ -57,7 +57,8 @@ vec3 readCausticMap(vec3 gpos) {
 	vec2 f = fract(fpos);
 	vec3 c = mix(mix(causticTexels(p), causticTexels(p + ivec2(1, 0)), f.x),
 	             mix(causticTexels(p + ivec2(0, 1)), causticTexels(p + ivec2(1, 1)), f.x), f.y);
-	return c / 100000.0;
+	vec2 s = vec2(causticSize()) / 2048.0;
+	return c / 100000.0 * (s.x * s.y);
 }
 
 #endif

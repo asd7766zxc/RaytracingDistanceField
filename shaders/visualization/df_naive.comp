@@ -70,7 +70,7 @@ void main(){
 
 		float c1 = xv * ww - xw * wv;
 		float c2 = xw * vv - xv * wv;
-		if(det > 1e-6){
+		if(det > 1e-12 * vv * ww){
 			c1 /= det, c2 /= det;
 			if(c1 + c2 <= 1 && c1 >= 0 && c2 >= 0){
 				float sdis = dot(p - v0,n);
@@ -93,7 +93,7 @@ void main(){
 		
 		// calculate the winding number
 	}
-	interior = (abs(winding) >= 0.01f); 
+	interior = (abs(winding) > M_PI);
 	winding /= 2 * M_PI;
 	imageStore(distance_field,voxelCoord,vec4(interior ? -d : d,1,1,1));
 }

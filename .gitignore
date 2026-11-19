@@ -2,4 +2,6 @@ build/
 .vscode/
 assets/cache/
 output/
+renders/
+render_scripts/
 *.ini

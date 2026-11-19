@@ -63,15 +63,17 @@ public:
 		clear_texture.use();
 		glDispatchCompute((caustic_map_r.sx + 15) / 16, (caustic_map_r.sy + 15) / 16, 1);
 		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-
 		photontrace.use();
+		
+		df_list.BindLocation(2);
+
 		photontrace.setInt("objects_count", objects_count);
 		photontrace.setInt("photon_count", photon_count);
 		photontrace.setVec3("intensity", intensity);
 		photontrace.setVec3("lightPos", lightPos);
 		photontrace.setVec3("groundMin", groundMin);
 		photontrace.setVec3("groundMax", groundMax);
-		photontrace.setFloat("frame_seed",glfwGetTime());
+		photontrace.setFloat("frame_seed",std::hash<int>{}(frame_index));
 		photontrace.setInt("point_mode", point_mode);
 		photontrace.setVec3("spread", spread);
 		photontrace.setFloat("IORSTART", IOR.x);

@@ -3,7 +3,7 @@
 
 void RayTracer::setupScence() {
 }
-void RayTracer::render(shared_ptr<Camera> camera,vec3 intensity,vec3 lightPos, vec3 groundMin, vec3 groundMax) {
+void RayTracer::render(shared_ptr<Camera> camera,vec3 intensity,vec3 lightPos, vec3 groundMin, vec3 groundMax,vec3 IOR,float shadow) {
 	vec3 coord = camera->getPixel00Pos();
 	df_list.BindLocation(2);
 	const ShaderProgram& program = use_splat ? splat_program : this->program;
@@ -22,10 +22,13 @@ void RayTracer::render(shared_ptr<Camera> camera,vec3 intensity,vec3 lightPos, v
 	program.setInt("window_w", window_width);
 	program.setInt("window_h", window_height);
 
+	program.setVec3("EYE_IOR", IOR);
+	program.setFloat("shadow_strength", shadow);
+
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glBindImageTexture(0, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-	glDispatchCompute(window_width, window_height, 1);
+	glDispatchCompute((window_width + 7)/8, (window_height + 7)/8, 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 	display_program.use();
 	renderQuad();

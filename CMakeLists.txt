@@ -34,6 +34,20 @@ FetchContent_Declare(tinyobjloader
     GIT_TAG        v1.0.6
     GIT_SHALLOW    TRUE)
 
+# stb
+include(FetchContent)
+
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG        master
+    GIT_SHALLOW    TRUE
+)
+FetchContent_MakeAvailable(stb)
+
+add_library(stb INTERFACE)
+target_include_directories(stb INTERFACE ${stb_SOURCE_DIR})
+
 # Dear ImGui
 FetchContent_Declare(imgui
     GIT_REPOSITORY https://github.com/ocornut/imgui.git
@@ -61,7 +75,7 @@ target_compile_definitions(imgui PRIVATE GLFW_INCLUDE_NONE)
 # app
 file(GLOB_RECURSE APP_SOURCES CONFIGURE_DEPENDS src/*.cpp)
 add_executable(rtdf ${APP_SOURCES})
-target_link_libraries(rtdf PRIVATE glfw glad tinyobjloader imgui)
+target_link_libraries(rtdf PRIVATE glfw glad tinyobjloader imgui stb)
 target_compile_definitions(rtdf PRIVATE
     SHADER_DIR="${CMAKE_CURRENT_SOURCE_DIR}/shaders/"
     ASSET_DIR="${CMAKE_CURRENT_SOURCE_DIR}/assets/"

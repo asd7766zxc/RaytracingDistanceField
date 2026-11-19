@@ -1,9 +1,7 @@
 #ifndef SCENE_GLSL
 #define SCENE_GLSL
 
-#ifndef MARCH_STEPS
-#define MARCH_STEPS 100
-#endif
+uniform int MARCH_STEPS = 100;
 
 #define MAT_DIFFUSE    0
 #define MAT_SPECULAR   1

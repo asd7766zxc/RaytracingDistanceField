@@ -26,8 +26,25 @@
 #include "DistanceField/DFMesh.hpp"
 #include "Raytracing/PhotonTracer.hpp"
 #include "Raytracing/PolygonSplatting.hpp"
-
+#include <string>
 #include <filesystem>
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
+
+#include <ranges>
+
+void saveTexHDR(const std::string& path, GLuint tex) {
+    int w, h;
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_WIDTH, &w);
+    glGetTexLevelParameteriv(GL_TEXTURE_2D, 0, GL_TEXTURE_HEIGHT, &h);
+    std::vector<float> px(w * h * 3);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, px.data());
+    stbi_write_hdr(path.c_str(), w, h, 3, px.data());
+}
 
 shared_ptr<Player> player;
 bool use_splat = false;
@@ -45,11 +62,13 @@ shared_ptr<RayTracer> raytracer;
 quat initial_orientation;
 vec3 lightPos;
 vec3 OBJPos;
-vec3 refracSplat;
+vec3 refracSplat;//normalized wavelength 
 vec3 refracPoint;
-
+vec3 EYE_IOR(1.5);
+float shadow = 0.5f;
 std::string objfilename;
-
+float fov = pi/2;
+std::vector<float> polywavelength;
 mat4 perframe_trans;
 mat4 perframe_light;
 
@@ -58,6 +77,8 @@ float objScale;
 
 bool usePrism = false;
 int objMaterial = 0;
+
+int caustic_map_resolution = 2048;
 
 void loadSceneSettings(std::string path){
 	std::ifstream in(path);
@@ -70,10 +91,14 @@ void loadSceneSettings(std::string path){
 	while (std::getline(in, line)) {
 		if(sscanf_s(line.c_str(), "width=%d,height=%d", &x,&y) == 2) window_width = x, window_height = y;
 		else if (sscanf_s(line.c_str(), "OBJ=%100s", &tmp[0]) == 1) objfilename = tmp;
+		else if (sscanf_s(line.c_str(), "EYE_IOR=%f,%f,%f", &xf,&yf,&zf) == 3) EYE_IOR = vec3(xf,yf,zf);
 		else if (sscanf_s(line.c_str(), "material=%d", &x) == 1) objMaterial = x;
 		else if (sscanf_s(line.c_str(), "usePrism=%d", &x) == 1) usePrism = x;
+		else if (sscanf_s(line.c_str(), "caustic_map_resolution=%d", &x) == 1) caustic_map_resolution = x;
 		else if (sscanf_s(line.c_str(), "dfres=%d", &x) == 1) objResolution = x;
 		else if (sscanf_s(line.c_str(), "objscale=%f", &xf) == 1) objScale = xf;
+		else if (sscanf_s(line.c_str(), "shadow=%f", &xf) == 1) shadow = xf;
+		else if (sscanf_s(line.c_str(), "FOV=%f", &xf) == 1) fov = xf;
 		else if (sscanf_s(line.c_str(), "DEFAULT_RAY_MODE=%d", &x) == 1) use_splat = x;
 		else if (sscanf_s(line.c_str(), "LIGHTRAY_COUNT=%d", &x) == 1) LIGHTRAY_COUNT = x;
 		else if (sscanf_s(line.c_str(), "LIGHTGRID=%d", &x) == 1) LIGHTGRID = x;
@@ -86,8 +111,12 @@ void loadSceneSettings(std::string path){
 		else if (sscanf_s(line.c_str(), "point_mode=%d",&x) == 1) point_mode = x;
 		else if (sscanf_s(line.c_str(), "spread=%f,%f", &xf,&yf) == 2) spread.x = xf, spread.y = yf;
 		else if (sscanf_s(line.c_str(), "nowindow=%d", &x) == 1) nowindow = x;
-		else if (sscanf_s(line.c_str(), "IORPOINT=%f,%f", &xf,&yf) == 1) refracPoint = vec3(xf,yf,0.0);
-		else if (sscanf_s(line.c_str(), "IORPOLY=%f,%f,%f", &xf,&yf,&zf) == 3) refracSplat = vec3(xf,yf,zf);;
+		else if (sscanf_s(line.c_str(), "IORPOINT=%f,%f", &xf,&yf) == 2) refracPoint = vec3(xf,yf,0.0);
+		else if (sscanf_s(line.c_str(), "IORPOLY=%f,%f", &xf,&yf) == 2) refracSplat = vec3(xf,yf,0.0);
+		else if (sscanf_s(line.c_str(), "POLYWAVE=%100s", &tmp[0]) == 1){
+			for (auto part : tmp | std::views::split(',')) 
+        	polywavelength.push_back(std::stof(std::string(part.begin(), part.end())));
+		}
 
 	}
 }
@@ -126,50 +155,63 @@ signed main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	window = glfwCreateWindow(window_width, window_height, "Voxel", NULL, NULL);
-	glfwSetWindowPos(window, 0, 30);
-	if (!window) {
-		glfwTerminate();
-		return -1;
+	if(!nowindow){
+			window = glfwCreateWindow(window_width, window_height, "Voxel", NULL, NULL);
+			glfwSetWindowPos(window, 0, 30);
+			if (!window) {
+				glfwTerminate();
+				return -1;
+			}
+			glfwMakeContextCurrent(window);
+			
+			glfwSetFramebufferSizeCallback(window, window_resize);
+			
+			glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+				player->key_callback(window, key, scancode, action, mods);
+				if (key == GLFW_KEY_C && action == GLFW_PRESS) {
+				use_splat = !use_splat;
+				std::cout << "caustics: " << (use_splat ? "polygon splatting" : "point splatting") << '\n';
+			}
+			if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+				start_render = !start_render;
+			}
+		});
+		glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
+			player->cursor_pos_callback(window, xpos, ypos);
+		});
+
+		//glfwSetMouseButtonCallback(window, mouse_button_callback);
+		//glfwSetScrollCallback(window, scroll_callback);
+		glfwSwapInterval(1); // Make fps constants
 	}
-	glfwMakeContextCurrent(window);
-
-	glfwSetFramebufferSizeCallback(window, window_resize);
-
-	glfwSetKeyCallback(window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
-		player->key_callback(window, key, scancode, action, mods);
-		if (key == GLFW_KEY_C && action == GLFW_PRESS) {
-			use_splat = !use_splat;
-			std::cout << "caustics: " << (use_splat ? "polygon splatting" : "point splatting") << '\n';
+	else {
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+		window = glfwCreateWindow(window_width, window_height, "Voxel", NULL, NULL);
+		if (!window) {
+			glfwTerminate();
+			return -1;
 		}
-		if (key == GLFW_KEY_V && action == GLFW_PRESS) {
-			start_render = !start_render;
-		}
-	});
-	glfwSetCursorPosCallback(window, [](GLFWwindow* window, double xpos, double ypos) {
-		player->cursor_pos_callback(window, xpos, ypos);
-	});
-
-	//glfwSetMouseButtonCallback(window, mouse_button_callback);
-	//glfwSetScrollCallback(window, scroll_callback);
-	glfwSwapInterval(1); // Make fps constants
+		glfwMakeContextCurrent(window);
+	}
 #pragma endregion
 #pragma region GladInitialization
 
-	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
 		std::cout << "Fail to load glad\n";
 		return 0;
 	}
 	std::cout << glGetString(GL_VERSION) << '\n';
-
+	
 #pragma endregion
 #pragma region ImGuiSetup
+if(!nowindow){
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 430");
+}
 #pragma endregion
 #pragma region GlSetup
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
@@ -203,8 +245,8 @@ signed main() {
 		});
 	Voxelizer voxelizer;
 
-	PhotonTracer photontracer(2048, 2048);
-	PolygonSplatting polysplat(2048, 2048);
+	PhotonTracer photontracer(caustic_map_resolution, caustic_map_resolution);
+	PolygonSplatting polysplat(caustic_map_resolution, caustic_map_resolution);
 	const int splat_grid_size = LIGHTGRID; // vertices per side -> 511^2 cells
 
 	DefaultRenderer renderer;
@@ -215,6 +257,7 @@ signed main() {
 	//player->position = vec3(-0.512054026, 3.84784102, 5.60283041);
 	player->position = vec3(0, 0, 5);
 	player->loadCamera(ASSET_DIR "camera.txt"); 
+	player->camera->fov = fov;
 	player->updateView();
 	//aabb culling_box = aabb(vec3(2.8, 2, -.5), vec3(3.5, 2.6, .5));
 	aabb culling_box = aabb(vec3(-1),vec3(1));
@@ -332,19 +375,19 @@ signed main() {
 		float delta = glfwGetTime() - delta_stamp;
 		delta_stamp = glfwGetTime();
 
-		vec3 light_pos = initial_light_pos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
+		vec3 light_pos = lightPos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 
 		// player->updateCameraPos(window, delta);
 		if(use_movingobject){
 			// obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01));
-			obj.position = (mat4::Ry(0.01) * vec4((obj.position - initial_light_pos),1.0f)).toVec3() + initial_light_pos;
+			obj.position = (mat4::Ry(0.01) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
 		}
 		df_datas[0] = obj.getDFOjbect(); 
 
 		auto start = std::chrono::steady_clock::now();
 		if (use_splat) {
 			polysplat.LoadDistanceFieldDatas(df_datas);
-			polysplat.render(refracSplat,splat_grid_size, vec3(intensity), light_pos, vec3(-20), vec3(20),point_mode,spread);
+			polysplat.render(polywavelength,refracSplat,splat_grid_size, vec3(intensity), light_pos, vec3(-20), vec3(20),point_mode,spread);
 		} else {
 			photontracer.LoadDistanceFieldDatas(df_datas);
 			photontracer.render(refracPoint,lightray_count, vec3(intensity), light_pos, vec3(-20), vec3(20),point_mode,spread);
@@ -352,7 +395,7 @@ signed main() {
 
 		raytracer->LoadDistanceFieldDatas(df_datas);
 		raytracer->use_splat = use_splat;
-		raytracer->render(player->camera,vec3(intensity), light_pos, vec3(-20), vec3(20));
+		raytracer->render(player->camera,vec3(intensity), light_pos, vec3(-20), vec3(20),EYE_IOR,shadow);
 		auto end = std::chrono::steady_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		total_time += duration.count();
@@ -360,16 +403,13 @@ signed main() {
          (use_splat ? ("Vertex Grid : " + std::to_string(splat_grid_size) + "^2") : (std::to_string(lightray_count) + " Light Rays"))).c_str();
 		 
 		if(frame_index >= STOPA){
-			saveTexPPM((outputdir + "img.ppm").c_str(),raytracer->texture);
+			saveTexHDR((outputdir + "img.hdr").c_str(),raytracer->texture);
     		std::ofstream(outputdir + "info.txt", std::ios::binary) << infos;
 			break;
 		}
 	}
 
 	if(nowindow){
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
 		glfwTerminate();
 		return 0;
 	}
@@ -388,19 +428,19 @@ signed main() {
 		float delta = glfwGetTime() - delta_stamp;
 		delta_stamp = glfwGetTime();
 
-		vec3 light_pos = initial_light_pos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
+		vec3 light_pos = lightPos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 
 		player->updateCameraPos(window, delta);
 		if(use_movingobject){
 			// obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01));
-			obj.position = (mat4::Ry(0.01) * vec4((obj.position - initial_light_pos),1.0f)).toVec3() + initial_light_pos;
+			obj.position = (mat4::Ry(0.01) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
 		}
 		df_datas[0] = obj.getDFOjbect(); 
 
 		auto start = std::chrono::steady_clock::now();
 		if (use_splat) {
 			polysplat.LoadDistanceFieldDatas(df_datas);
-			polysplat.render( refracSplat,splat_grid_size, vec3(intensity), light_pos, vec3(-20), vec3(20),point_mode,spread);
+			polysplat.render(polywavelength,refracSplat,splat_grid_size, vec3(intensity), light_pos, vec3(-20), vec3(20),point_mode,spread);
 		} else {
 			photontracer.LoadDistanceFieldDatas(df_datas);
 			photontracer.render(refracPoint,lightray_count, vec3(intensity), light_pos, vec3(-20), vec3(20),point_mode,spread);
@@ -408,7 +448,7 @@ signed main() {
 
 		raytracer->LoadDistanceFieldDatas(df_datas);
 		raytracer->use_splat = use_splat;
-		raytracer->render(player->camera,vec3(intensity), light_pos, vec3(-20), vec3(20));
+		raytracer->render(player->camera,vec3(intensity), light_pos, vec3(-20), vec3(20),EYE_IOR,shadow);
 		auto end = std::chrono::steady_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 		total_time += duration.count();
