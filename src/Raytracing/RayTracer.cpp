@@ -24,6 +24,7 @@ void RayTracer::render(shared_ptr<Camera> camera,vec3 intensity,vec3 lightPos, v
 
 	program.setVec3("EYE_IOR", IOR);
 	program.setFloat("shadow_strength", shadow);
+	program.setVec3("ambient", ambient);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, texture);

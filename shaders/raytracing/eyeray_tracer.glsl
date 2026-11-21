@@ -41,6 +41,7 @@ float get(int i,vec3 p){
 	return p.z;
 }
 bool hitglass = false;
+uniform vec3 ambient;
 bool onHit(inout RayState s, Hit h) {
 	if (h.material == MAT_SPECULAR) {
 		reflectRay(s, h);
@@ -60,13 +61,12 @@ bool onHit(inout RayState s, Hit h) {
 	if (h.material == MAT_GROUND) {
 		float diffuse = max(0.5 * dot(h.n, normalize(lightPos - h.p)), 0.0) * mix(1.0,shadowRay(h.p),shadow_strength);
 		// diffuse = 0.0f;
-		store_color(eye_radiance * diffuse + readCausticMap(h.p));
+		store_color(eye_radiance * diffuse + readCausticMap(h.p) + ambient);
 		return false;
 	}
 	store_color(eye_radiance);
 	return false;
 }
-
 void onMiss(inout RayState s) {
 	store_color(vec3(0)); //ambient
 }

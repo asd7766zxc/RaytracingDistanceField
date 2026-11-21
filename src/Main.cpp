@@ -1,6 +1,7 @@
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <sstream>
 #include <windows.h>
 #include <iostream>
 
@@ -33,7 +34,6 @@
 #include "stb_image_write.h"
 
 
-#include <ranges>
 
 shared_ptr<Player> player;
 bool use_splat = false;
@@ -69,6 +69,11 @@ int objMaterial = 0;
 
 int caustic_map_resolution = 2048;
 
+bool video_mode = false;
+
+float light_speed = 1.0f;
+float obj_speed = 1.0f;
+vec3 ambient = vec3(0.0);
 void loadSceneSettings(std::string path){
 	std::ifstream in(path);
 	if (!in) return;
@@ -102,6 +107,25 @@ void loadSceneSettings(std::string path){
 		else if (sscanf_s(line.c_str(), "nowindow=%d", &x) == 1) nowindow = x;
 		else if (sscanf_s(line.c_str(), "IORPOINT=%f,%f", &xf,&yf) == 2) refracPoint = vec3(xf,yf,0.0);
 		else if (sscanf_s(line.c_str(), "IORPOLY=%f,%f", &xf,&yf) == 2) refracSplat = vec3(xf,yf,0.0);
+		else if (sscanf_s(line.c_str(), "VIDEO=%d", &x) == 1) video_mode = x;
+		else if (sscanf_s(line.c_str(), "AMBIENT=%f,%f,%f", &xf,&yf,&zf) == 3) {
+			ambient = vec3(xf,yf,zf);
+		}else if (sscanf_s(line.c_str(), "SPEED=%f", &xf) == 1){
+			obj_speed = xf;
+		}
+		// else if (sscanf_s(line.c_str(), "OBJMAT=%99s", &tmp[0]) == 1){
+		// 	std::istringstream ss(tmp);
+		// 	int t = 0;
+		// 	for(float i; ss >> i; ss.ignore()) {
+		// 			perframe_trans.mt[t++] = i;
+		// 	}
+		// }else if (sscanf_s(line.c_str(), "LIGHTMAT=%99s", &tmp[0]) == 1){
+		// 	std::istringstream ss(tmp);
+		// 	int t = 0;
+		// 	for(float i; ss >> i; ss.ignore()) {
+		// 			perframe_light.mt[t++] = i;
+		// 	}
+		// }
 		else if (sscanf_s(line.c_str(), "POLYWAVE=%d", &x) == 1){
 			for(int i = 0; i < x; ++i){
 				polywavelength.push_back(float(i + 0.5f) / x);
@@ -366,8 +390,12 @@ if(!nowindow){
 		std::error_code ec;
 		std::filesystem::copy(ASSET_DIR "camera.txt",outputdir + "camera.txt", std::filesystem::copy_options::overwrite_existing,ec);
 		std::filesystem::copy(ASSET_DIR "scene.txt",outputdir + "scene.txt", std::filesystem::copy_options::overwrite_existing,ec);
+		if(video_mode){
+			std::filesystem::create_directories(outputdir + "/video/");
+		}
 	}
-
+	raytracer->ambient = ambient;
+	vec3 light_pos = lightPos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 	while(nowindow){
 		++frame_index;
 		glViewport(0, 0, window_width, window_height);
@@ -377,13 +405,13 @@ if(!nowindow){
 		float delta = glfwGetTime() - delta_stamp;
 		delta_stamp = glfwGetTime();
 
-		vec3 light_pos = lightPos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 
 		// player->updateCameraPos(window, delta);
-		if(use_movingobject){
-			// obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01));
-			obj.position = (mat4::Ry(0.01) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
-		}
+
+		if(use_movingobject == 1) obj.position = (mat4::Ry(0.01 * obj_speed) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
+		if(use_movingobject == 2) obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01 * obj_speed));
+		if(use_movingobject == 3) light_pos = (mat4::Ry(0.01 * obj_speed) * vec4((light_pos - obj.position),1.0f)).toVec3() + obj.position;
+
 		df_datas[0] = obj.getDFOjbect(); 
 
 		auto start = std::chrono::steady_clock::now();
@@ -403,7 +431,9 @@ if(!nowindow){
 		total_time += duration.count();
 		std::string infos = (std::string("") + std::to_string(total_time / 1000.0f) + " ms" + " - Frame: " + std::to_string(frame_index) + " - Avg Frame time: " + std::to_string(((float)total_time) / frame_index / 1000.0f) + " ms" + " - Window Size: " + std::to_string(window_width) + "x" + std::to_string(window_height) + " " +\
          (use_splat ? ("Vertex Grid : " + std::to_string(splat_grid_size) + "^2") : (std::to_string(lightray_count) + " Light Rays"))).c_str();
-		 
+		if(video_mode){
+			savePNG((outputdir + "/video/" + std::to_string(frame_index) + ".png").c_str(),raytracer->texture);
+		}
 		if(frame_index >= STOPA){
 			savePNG((outputdir + "img.png").c_str(),raytracer->texture);
     		std::ofstream(outputdir + "info.txt", std::ios::binary) << infos;
@@ -416,7 +446,8 @@ if(!nowindow){
 		return 0;
 	}
 
-
+	
+	light_pos = lightPos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 	while (!glfwWindowShouldClose(window)) {
 		if (!start_render) {
 			glfwPollEvents();
@@ -430,11 +461,11 @@ if(!nowindow){
 		float delta = glfwGetTime() - delta_stamp;
 		delta_stamp = glfwGetTime();
 
-		vec3 light_pos = lightPos; // + vec3(std::cos(glfwGetTime()),0,std::sin(glfwGetTime()));
 
 		player->updateCameraPos(window, delta);
-		if(use_movingobject == 1) obj.position = (mat4::Ry(0.01) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
-		if(use_movingobject == 2) obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01));
+		if(use_movingobject == 1) obj.position = (mat4::Ry(0.01 * obj_speed) * vec4((obj.position - light_pos),1.0f)).toVec3() + light_pos;
+		if(use_movingobject == 2) obj.orientation = obj.orientation.rotate(vec3(0, 0, 0.01 * obj_speed));
+		if(use_movingobject == 3) light_pos = (mat4::Ry(0.01 * obj_speed) * vec4((light_pos - obj.position),1.0f)).toVec3() + obj.position;
 		df_datas[0] = obj.getDFOjbect(); 
 
 		auto start = std::chrono::steady_clock::now();

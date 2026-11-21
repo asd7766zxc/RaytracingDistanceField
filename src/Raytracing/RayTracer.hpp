@@ -14,6 +14,7 @@ public:
 	ShaderProgram program;        
 	ShaderProgram splat_program;  
 	ShaderProgram display_program;
+	vec3 ambient;
 	bool use_splat = false;
 	
 	ShaderArrayBuffer<DF_Object> df_list;
