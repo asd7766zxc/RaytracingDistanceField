@@ -82,9 +82,18 @@ void loadSceneSettings(std::string path){
 	std::string line;
 	int x,y,z,w;
 	float xf,yf,zf,wf;
+	const std::string prefix = "OBJ=";
 	while (std::getline(in, line)) {
 		if(sscanf_s(line.c_str(), "width=%d,height=%d", &x,&y) == 2) window_width = x, window_height = y;
-		else if (sscanf_s(line.c_str(), "OBJ=%100s", &tmp[0]) == 1) objfilename = tmp;
+		else if (line.starts_with(prefix)) {
+			auto value = line.substr((prefix).size());
+			if (auto end = value.find_first_of(" \t\r\n"); end != std::string::npos) {
+				value = value.substr(0, end);
+			}
+			if (!value.empty()) {
+				objfilename = value;
+			}
+		}
 		else if (sscanf_s(line.c_str(), "EYE_IOR=%f,%f,%f", &xf,&yf,&zf) == 3) EYE_IOR = vec3(xf,yf,zf);
 		else if (sscanf_s(line.c_str(), "material=%d", &x) == 1) objMaterial = x;
 		else if (sscanf_s(line.c_str(), "usePrism=%d", &x) == 1) usePrism = x;
